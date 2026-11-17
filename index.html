@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0c0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tablero">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Tablero · Max</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#0a0c0f;--p1:#111418;--p2:#171b21;--p3:#1e232b;--bd:#262c36;--bd2:#323946;--tx:#e7e9ec;--mu:#8b93a1;--mu2:#5f6774;--ac:#4c8dff;--ac2:#2f6fe0;--ok:#2fb67c;--wa:#e0a43a;--er:#e5534b;--r:8px;font-size:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#2a303a;border-radius:6px}::-webkit-scrollbar-track{background:transparent}
+a{color:var(--ac);cursor:pointer;text-decoration:none}
+input,select,textarea{background:var(--p2);border:1px solid var(--bd);color:var(--tx);border-radius:6px;padding:8px 10px;font:inherit;outline:none;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--ac)}
+input[type=date],input[type=month],input[type=time]{color-scheme:dark}
+input[type=checkbox]{accent-color:var(--ac);width:16px;height:16px;margin:0;cursor:pointer;flex:none}
+textarea{resize:vertical;width:100%;line-height:1.45}
+.btn{background:var(--p3);border:1px solid var(--bd2);color:var(--tx);border-radius:6px;padding:8px 12px;font:inherit;font-weight:550;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn:hover{border-color:#4a5463}
+.btn.pri{background:var(--ac2);border-color:var(--ac2);color:#fff}.btn.pri:hover{background:var(--ac)}
+.btn.ok{background:#143a29;border-color:#1f6b47;color:#8fe3b9}
+.btn.sm{padding:5px 9px;font-size:12.5px}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--mu)}.btn.ghost:hover{color:var(--tx);background:var(--p2)}
+.btn.danger{background:#3a1a1a;border-color:#6b2a27;color:#ffb4ae}
+.btn.full{width:100%;justify-content:flex-start}
+.btn:disabled{opacity:.5;cursor:default}
+.mu{color:var(--mu)}.mu2{color:var(--mu2)}.warn{color:var(--wa)}.err{color:var(--er)}.okc{color:var(--ok)}
+.num{font-variant-numeric:tabular-nums}
+.sp{flex:1}
+.hide{display:none!important}
+/* Login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.lc{width:min(360px,100%);background:var(--p1);border:1px solid var(--bd);border-radius:12px;padding:26px;display:flex;flex-direction:column;gap:10px}
+.lc .lm{font-size:12.5px;color:var(--mu);text-align:center;margin-top:4px}
+.brand{font-weight:650;font-size:16px;letter-spacing:.2px}
+.brand small{display:block;color:var(--mu);font-weight:550;font-size:11px;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+/* Layout */
+#side{position:fixed;left:0;top:0;bottom:0;width:224px;background:var(--p1);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:16px 12px;z-index:6}
+.nav{margin-top:20px;display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;color:var(--mu);cursor:pointer;font-weight:550}
+.nav a svg{width:16px;height:16px;flex:none;opacity:.85}
+.nav a:hover{background:var(--p2);color:var(--tx)}
+.nav a.on{background:var(--p3);color:var(--tx)}
+.nav .c{margin-left:auto;font-size:11.5px;color:var(--mu2);font-variant-numeric:tabular-nums}
+.nav .c.alert{color:var(--er);font-weight:650}
+.sfoot{margin-top:auto;border-top:1px solid var(--bd);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.sfoot .info{font-size:11.5px;color:var(--mu2);padding:2px 4px;line-height:1.5;word-break:break-all}
+#wrap{margin-left:224px;min-height:100vh}
+#top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 24px;background:rgba(10,12,15,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--bd)}
+#top h1{font-size:17px;font-weight:620;margin:0;white-space:nowrap}
+#q{width:280px}
+.esps{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.esps::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--bd2);color:var(--mu);font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;background:transparent}
+.chip.on{color:var(--tx);background:var(--p3);border-color:#4a5463}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+main{padding:20px 24px 80px}
+#bnav{display:none}
+/* Componentes */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{background:var(--p1);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;cursor:pointer}
+.kpi:hover{border-color:var(--bd2)}
+.kpi .l{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;font-weight:650}
+.kpi .v{font-size:24px;font-weight:650;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11.5px;color:var(--mu);margin-top:2px}
+.sec{margin-top:24px}
+.sec h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--mu);font-weight:650;margin:0 0 10px;display:flex;align-items:center;gap:10px}
+.sec h2 .r{margin-left:auto;text-transform:none;letter-spacing:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.list{background:var(--p1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bd);cursor:pointer;min-height:46px}
+.li:last-child{border-bottom:none}
+.li:hover{background:var(--p2)}
+.li .t{flex:1;min-width:0}
+.li .t b{font-weight:560;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .t span{font-size:12px;color:var(--mu);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dchip{flex:none;width:46px;text-align:center;border:1px solid var(--bd2);border-radius:6px;padding:3px 0;line-height:1.15}
+.dchip b{display:block;font-size:15px}.dchip span{font-size:10px;text-transform:uppercase;color:var(--mu);font-weight:650}
+.dchip.past{border-color:#6b2a27;background:#2a1414}.dchip.past b{color:#ff8f88}
+.dchip.today{border-color:var(--ac2);background:#122038}
+.amt{font-weight:620;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.etag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--mu);white-space:nowrap}
+.board{display:grid;grid-template-columns:repeat(5,minmax(220px,1fr));gap:10px;overflow-x:auto;padding-bottom:4px}
+.col{background:var(--p1);border:1px solid var(--bd);border-radius:var(--r);padding:8px;min-height:140px}
+.col.over{border-color:var(--ac);background:#121a26}
+.colh{display:flex;align-items:center;gap:7px;padding:4px 4px 9px;font-weight:620;font-size:12.5px}
+.colh .n{margin-left:auto;color:var(--mu2);font-weight:550}
+.card{background:var(--p2);border:1px solid var(--bd);border-radius:6px;padding:9px 10px;margin-bottom:7px;cursor:pointer}
+.card:hover{border-color:var(--bd2)}
+.card .t{font-weight:560;line-height:1.32}
+.card .m{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px;font-size:11.5px;color:var(--mu);align-items:center}
+.tbl{background:var(--p1);border:1px solid var(--bd);border-radius:var(--r);overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--mu);font-weight:650;padding:9px 12px;border-bottom:1px solid var(--bd);white-space:nowrap;cursor:pointer;user-select:none}
+th.s{color:var(--tx)}
+td{padding:9px 12px;border-bottom:1px solid var(--bd);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filters label.ck{display:flex;align-items:center;gap:6px;color:var(--mu);font-size:13px;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--bd2);border-radius:6px;overflow:hidden}
+.seg button{background:transparent;border:none;color:var(--mu);padding:7px 11px;font:inherit;font-weight:550;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--p3);color:var(--tx)}
+.bar{height:6px;background:var(--p3);border-radius:4px;overflow:hidden;display:flex}
+.mbar{display:inline-flex;align-items:center;gap:6px}.mbar .bar{width:46px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.pc{background:var(--p1);border:1px solid var(--bd);border-radius:var(--r);padding:14px}
+.pc .pt{font-weight:620;font-size:15px}
+.pc .tl{margin-top:10px;border-top:1px solid var(--bd);padding-top:6px}
+.pc .tl div{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer}
+.pc .tl div:hover span.tn{color:var(--ac)}
+.pc .tl span.tn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{color:var(--mu);padding:28px;text-align:center;border:1px dashed var(--bd);border-radius:8px}
+.why{font-size:11px;font-weight:650;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.sum{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sum .kpi{cursor:default;min-width:170px;flex:1}
+/* Calendario */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--bd);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
+.cal .h{background:var(--p1);padding:7px;font-size:11px;text-transform:uppercase;color:var(--mu);font-weight:650;text-align:center}
+.cal .d{background:var(--p1);min-height:92px;padding:5px 6px;cursor:pointer;overflow:hidden}
+.cal .d:hover{background:var(--p2)}
+.cal .d.out{background:#0d1013}.cal .d.out .n{color:var(--mu2)}
+.cal .d.sel{outline:2px solid var(--ac2);outline-offset:-2px}
+.cal .d .n{font-size:12px;font-weight:600;color:var(--mu)}
+.cal .d.today .n{background:var(--ac2);color:#fff;border-radius:4px;padding:0 5px;display:inline-block}
+.cal .ev{font-size:11px;padding:1px 5px;border-radius:3px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:2px solid}
+/* Drawer */
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(700px,100%);background:var(--p1);border-left:1px solid var(--bd2);transform:translateX(102%);transition:transform .18s ease;z-index:20;display:flex;flex-direction:column;box-shadow:-24px 0 48px rgba(0,0,0,.45)}
+#drawer.on{transform:none}
+.dh{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--bd);padding-top:max(12px,env(safe-area-inset-top))}
+.dh .ttl{flex:1;font-size:16px;font-weight:620;background:transparent;border-color:transparent}
+.dh .ttl:hover{border-color:var(--bd)}.dh .ttl:focus{border-color:var(--ac)}
+.db{flex:1;overflow:auto;padding:16px 18px 30px;-webkit-overflow-scrolling:touch}
+.fg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.f label{display:block;font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;font-weight:650;margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%}
+.ds{margin-top:22px}
+.ds h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mu);margin:0 0 8px;font-weight:650;display:flex;align-items:center;gap:8px}
+.ds h3 .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;display:flex;gap:6px;align-items:center}
+.chk{display:flex;align-items:center;gap:9px;padding:7px 8px;border:1px solid var(--bd);border-radius:6px;margin-bottom:5px;background:var(--p2)}
+.chk span{flex:1;outline:none}
+.chk.done span{text-decoration:line-through;color:var(--mu2)}
+.x{opacity:.35;transition:opacity .1s}
+.chk:hover .x,.att:hover .x,.log:hover .x{opacity:1}
+.log{border-left:2px solid var(--bd2);padding:1px 0 11px 12px;margin-left:4px}
+.log .d{font-size:11.5px;color:var(--mu);display:flex;gap:8px;align-items:center}
+.log .tx{white-space:pre-wrap;margin-top:2px;line-height:1.45}
+.log.sys{border-left-color:var(--bd)}.log.sys .tx{color:var(--mu);font-size:12.5px}
+.log.usr{border-left-color:var(--ac2)}
+.drop{border:1px dashed var(--bd2);border-radius:8px;padding:14px;text-align:center;color:var(--mu);cursor:pointer;font-size:13px}
+.drop.over,.drop:hover{border-color:var(--ac);color:var(--tx)}
+.att{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--bd);border-radius:6px;margin-top:6px;background:var(--p2)}
+.att .n{flex:1;min-width:0}
+.att .n div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att .k{font-size:10.5px;font-weight:700;color:var(--mu);background:var(--p3);border-radius:4px;padding:2px 6px;text-transform:uppercase;min-width:42px;text-align:center}
+.df{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--bd);flex-wrap:wrap;padding-bottom:max(12px,env(safe-area-inset-bottom))}
+#modal{display:none}
+.mb{position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:40;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh;overflow:auto}
+.mc{background:var(--p1);border:1px solid var(--bd2);border-radius:10px;width:min(540px,94vw);padding:18px 18px 16px;box-shadow:0 20px 60px rgba(0,0,0,.5);margin-bottom:40px}
+.mc h3{margin:0 0 14px;font-size:15px;font-weight:620}
+.mc .f{margin-bottom:10px}
+.mf{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}
+.menu{display:flex;flex-direction:column;gap:6px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--p3);border:1px solid var(--bd2);padding:9px 14px;border-radius:8px;opacity:0;transition:opacity .2s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+#busy{position:fixed;top:0;left:0;height:2px;background:var(--ac);z-index:70;width:0;transition:width .3s}
+.rep{display:grid;grid-template-columns:290px 1fr;gap:14px;align-items:start}
+.rep .pc .f{margin-bottom:10px}
+.rep iframe{width:100%;height:calc(100vh - 120px);border:1px solid var(--bd);border-radius:8px;background:#0b0d10}
+.hr{border-top:1px solid var(--bd);margin:12px 0}
+.ck2{display:flex;align-items:center;gap:7px;color:var(--mu);margin:7px 0;cursor:pointer}
+.kbd{font-size:11px;border:1px solid var(--bd2);border-radius:4px;padding:0 5px;color:var(--mu)}
+.fab{display:none}
+/* Mobile */
+@media(max-width:860px){
+  #side{display:none}
+  #wrap{margin-left:0}
+  #top{padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));flex-wrap:wrap;gap:8px}
+  #top h1{font-size:16px}
+  #q{order:5;width:100%}
+  .esps{order:6;width:100%}
+  main{padding:14px 12px 110px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .kpi .v{font-size:21px}
+  .grid2{grid-template-columns:1fr}
+  .fg{grid-template-columns:1fr 1fr}
+  .board{grid-template-columns:repeat(5,82vw);scroll-snap-type:x mandatory}
+  .col{scroll-snap-align:start}
+  .rep{grid-template-columns:1fr}
+  .rep iframe{height:70vh}
+  .hm{display:none!important}
+  #bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:15;background:rgba(17,20,24,.97);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
+  #bnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0 7px;color:var(--mu);font-size:10.5px;font-weight:600}
+  #bnav a.on{color:var(--tx)}
+  #bnav svg{width:20px;height:20px}
+  .fab{display:flex;position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:16;width:52px;height:52px;border-radius:50%;background:var(--ac2);color:#fff;border:none;font-size:26px;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .cal .d{min-height:54px;padding:3px}
+  .cal .ev{font-size:0;height:5px;padding:0;border-left:none;margin-top:2px}
+  .mb{padding-top:4vh}
+  input,select,textarea{font-size:16px}
+  #toast{bottom:calc(140px + env(safe-area-inset-bottom))}
+  .sec h2{flex-wrap:wrap}
+  .sec h2 .r{margin-left:0;width:100%;display:flex;gap:6px}
+}
+@media(min-width:861px){.sm-only{display:none!important}}
+</style>
+</head>
+<body>
+<div id="busy"></div>
+
+<div id="login" class="login hide">
+  <div class="lc">
+    <div class="brand">Tablero<small>Max Rolón</small></div>
+    <div style="height:6px"></div>
+    <input id="le" type="email" placeholder="Mail" autocomplete="username">
+    <input id="lp" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn pri" onclick="doLogin()">Ingresar</button>
+    <div class="lm"><a onclick="doSignup()">Crear usuario</a> · <a onclick="doReset()">Olvidé mi contraseña</a></div>
+    <div id="lerr" class="lm err"></div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+<aside id="side">
+  <div class="brand">Tablero<small>Max Rolón</small></div>
+  <nav class="nav" id="nav"></nav>
+  <div class="sfoot">
+    <button class="btn pri full" onclick="quickAdd()">+ Nuevo <span class="kbd" style="margin-left:auto;color:#cfe0ff;border-color:#6d9cf0">N</span></button>
+    <div class="info" id="sinfo"></div>
+  </div>
+</aside>
+<div id="wrap">
+  <header id="top">
+    <h1 id="vt">Inicio</h1>
+    <div class="esps hm" id="espsD"></div>
+    <div class="sp"></div>
+    <span id="saved" class="mu2 hm" style="font-size:12px"></span>
+    <input id="q" placeholder="Buscar…  ( / )" autocomplete="off">
+    <div class="esps sm-only" id="espsM"></div>
+  </header>
+  <main id="main"></main>
+</div>
+<nav id="bnav"></nav>
+<button class="fab" onclick="quickAdd()">+</button>
+</div>
+
+<div id="drawer"></div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+/* ===================== Config ===================== */
+const SB_URL='https://sipgrhcxignspvkeqgec.supabase.co';
+const SB_KEY='sb_publishable_kSznWqJh-iaCZC5wCaHYiQ_mSbXwdF4';
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos'];
+
+const ESTADOS=['Pendiente','En curso','En espera','Bloqueado','Cerrado'];
+const EC={'Pendiente':'#8b93a1','En curso':'#4c8dff','En espera':'#e0a43a','Bloqueado':'#e5534b','Cerrado':'#2fb67c'};
+const PRIOS=['Alta','Media','Baja'];
+const PC={'Alta':'#e5534b','Media':'#e0a43a','Baja':'#6b7380'};
+const PEST=['Activo','En pausa','Cerrado'];
+const CATS=['Documento','Comprobante','Factura','Planilla','Contrato','Mail / Nota','Informe','Diseño / Esquema','Otro'];
+const PCATS=['Expensas','Servicios','Impuestos','Tarjeta','Alquiler','Seguro','Préstamo','Suscripción','Educación','Salud','Auto','Otro'];
+const MEDIOS=['Transferencia','Débito automático','Tarjeta de crédito','Tarjeta de débito','Mercado Pago','Efectivo','Otro'];
+const RECS={'':'No se repite','mensual':'Mensual','bimestral':'Bimestral','trimestral':'Trimestral','semestral':'Semestral','anual':'Anual'};
+const RECM={mensual:1,bimestral:2,trimestral:3,semestral:6,anual:12};
+const MONEDAS=['ARS','USD','EUR'];
+const ECOLORS=['#4c8dff','#2fb67c','#e0a43a','#b07cff','#e5534b','#2bb7c4','#e86fb0','#8b93a1'];
+
+/* ===================== Utilidades ===================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2)+Date.now().toString(36));
+const now=()=>new Date().toISOString();
+const norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function localISO(d=new Date()){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+const TODAY=()=>localISO();
+function addDays(iso,n){const d=new Date(iso+'T12:00:00');d.setDate(d.getDate()+n);return localISO(d)}
+function addMonths(iso,n){const d=new Date(iso+'T12:00:00');const day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));return localISO(d)}
+function fd(s){if(!s)return '—';const d=String(s).slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0].slice(2)}
+function fdt(s){if(!s)return '—';const d=new Date(s);return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}
+function daysTo(iso){return Math.round((new Date(iso+'T12:00:00')-new Date(TODAY()+'T12:00:00'))/86400000)}
+function daysSince(ts){return Math.floor((Date.now()-new Date(ts).getTime())/86400000)}
+function ago(ts){if(!ts)return '—';const d=daysSince(ts);return d<=0?'hoy':d===1?'ayer':'hace '+d+' d'}
+function when(iso){const n=daysTo(iso);if(n===0)return 'hoy';if(n===1)return 'mañana';if(n===-1)return 'ayer';return n<0?`hace ${-n} d`:`en ${n} d`}
+const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const MESL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function dchip(iso,done){const d=iso.split('-');const n=daysTo(iso);return `<div class="dchip ${!done&&n<0?'past':n===0?'today':''}"><b>${+d[2]}</b><span>${MES[+d[1]-1]}</span></div>`}
+function fsize(b){if(!b&&b!==0)return '';if(b<1024)return b+' B';if(b<1048576)return (b/1024).toFixed(0)+' KB';return (b/1048576).toFixed(1)+' MB'}
+function ext(n){const m=String(n).match(/\.([a-z0-9]{1,5})$/i);return m?m[1]:'—'}
+const NF=new Intl.NumberFormat('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function money(v,cur){const s=NF.format(+v||0);return (cur==='USD'?'US$ ':cur==='EUR'?'€ ':'$ ')+s}
+function parseMonto(s){s=String(s||'').replace(/[^\d,.\-]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return Math.round((parseFloat(s)||0)*100)/100}
+function slug(s){return norm(s).replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,40)||'archivo'}
+function toast(m){const e=$('#toast');e.textContent=m;e.style.opacity=1;clearTimeout(toast._t);toast._t=setTimeout(()=>e.style.opacity=0,2400)}
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+function pill(e){const c=EC[e]||'#888';return `<span class="pill" style="color:${c};border-color:${c}55;background:${c}17"><span class="dot" style="background:${c}"></span>${esc(e)}</span>`}
+function ppill(p){const st=pagoSt(p);const c={pagado:'#2fb67c',vencido:'#e5534b',pendiente:'#e0a43a',cancelado:'#8b93a1'}[st];const l={pagado:'Pagado',vencido:'Vencido',pendiente:'A pagar',cancelado:'Cancelado'}[st];return `<span class="pill" style="color:${c};border-color:${c}55;background:${c}17">${l}</span>`}
+function prio(p){return `<span style="display:inline-flex;align-items:center;gap:6px"><span class="dot" style="background:${PC[p]||'#888'}"></span>${esc(p||'—')}</span>`}
+const ICON={
+ inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+ temas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
+ proyectos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+ pagos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+ agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+ docs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>',
+ informes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+ ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+ mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
+};
+
+/* ===================== Datos ===================== */
+let D={};TABLES.forEach(t=>D[t]=[]);
+let USER=null,lastLoad=0,busyN=0;
+function busy(on){busyN+=on?1:-1;if(busyN<0)busyN=0;const b=$('#busy');b.style.width=busyN?'70%':'100%';if(!busyN)setTimeout(()=>{if(!busyN)b.style.width='0'},300);$('#saved').textContent=busyN?'Guardando…':'Guardado ✓'}
+function fail(e){console.error(e);toast('Error: '+(e&&e.message||e));}
+async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{if(r.error)throw r.error;D[TABLES[i]]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
+async function ins(t,row){busy(1);try{const{data,error}=await sb.from(t).insert(row).select().single();if(error)throw error;D[t].push(data);return data}catch(e){fail(e);return null}finally{busy(0)}}
+async function insMany(t,rows){if(!rows.length)return[];busy(1);try{const{data,error}=await sb.from(t).insert(rows).select();if(error)throw error;D[t].push(...data);return data}catch(e){fail(e);return[]}finally{busy(0)}}
+async function upd(t,id,patch){const o=D[t].find(x=>x.id===id);if(o)Object.assign(o,patch);busy(1);try{const{error}=await sb.from(t).update(patch).eq('id',id);if(error)throw error}catch(e){fail(e);await loadAll();render()}finally{busy(0)}}
+async function del(t,id){D[t]=D[t].filter(x=>x.id!==id);busy(1);try{const{error}=await sb.from(t).delete().eq('id',id);if(error)throw error}catch(e){fail(e);await loadAll();render()}finally{busy(0)}}
+const G={esp:id=>D.espacios.find(x=>x.id===id),proj:id=>D.proyectos.find(x=>x.id===id),tema:id=>D.temas.find(x=>x.id===id),pago:id=>D.pagos.find(x=>x.id===id),rec:id=>D.recordatorios.find(x=>x.id===id),doc:id=>D.documentos.find(x=>x.id===id)};
+const espName=id=>(G.esp(id)||{}).nombre||'';
+const projName=id=>(G.proj(id)||{}).nombre||'';
+function etag(id){const e=G.esp(id);return e?`<span class="etag"><span class="dot" style="background:${e.color}"></span>${esc(e.nombre)}</span>`:''}
+const espsSorted=()=>[...D.espacios].sort((a,b)=>(a.orden-b.orden)||a.nombre.localeCompare(b.nombre));
+const isOpen=t=>t.estado!=='Cerrado';
+const vencido=t=>isOpen(t)&&t.objetivo&&t.objetivo<TODAY();
+const stale=t=>isOpen(t)&&daysSince(t.actualizado)>=7;
+const pendsOf=id=>D.pendientes.filter(p=>p.tema_id===id).sort((a,b)=>a.creado<b.creado?-1:1);
+const logsOf=id=>D.bitacora.filter(b=>b.tema_id===id).sort((a,b)=>a.fecha<b.fecha?-1:1);
+const docsOf=(k,id)=>D.documentos.filter(d=>d[k]===id).sort((a,b)=>a.creado<b.creado?1:-1);
+function pendStat(id){const p=pendsOf(id);const dn=p.filter(x=>x.hecho).length;return{tot:p.length,dn,open:p.length-dn}}
+function lastUser(id){const u=logsOf(id).filter(b=>b.tipo==='usr');return u[u.length-1]}
+function pagoSt(p){if(p.estado==='Pagado')return 'pagado';if(p.estado==='Cancelado')return 'cancelado';if(p.vencimiento&&p.vencimiento<TODAY())return 'vencido';return 'pendiente'}
+async function logT(temaId,texto,tipo='sys'){const r=await ins('bitacora',{tema_id:temaId,texto,tipo});return r}
+async function touch(temaId,msg){const ts=now();await upd('temas',temaId,{actualizado:ts});if(msg)await logT(temaId,msg)}
+
+/* ===================== Estado UI ===================== */
+let VIEW='inicio',Q='',ESP=localStorage.getItem('tb_esp')||'';
+let F={estado:'',proyecto:'',prio:'',cerrados:false,flag:'',sort:'actualizado',dir:-1,modo:localStorage.getItem('tb_modo')||'lista'};
+let PF={vista:'apagar',mes:TODAY().slice(0,7),cat:''};
+let CAL={m:TODAY().slice(0,7),sel:TODAY()};
+let DF={cat:''};
+let RS={k:'general',p:'',c:false,b:true,sys:false,since:addDays(TODAY(),-7),mes:TODAY().slice(0,7)};
+let DR=null; // {k:'tema'|'pago'|'rec', id}
+let lastReport={html:'',name:''};
+const TITLES={inicio:'Inicio',temas:'Temas',proyectos:'Proyectos',pagos:'Pagos',agenda:'Agenda',docs:'Documentos',informes:'Informes',ajustes:'Ajustes'};
+const inEsp=x=>!ESP||x.espacio_id===ESP;
+function setEsp(id){ESP=id;localStorage.setItem('tb_esp',id);render()}
+function go(v){VIEW=v;closeMenu();render();window.scrollTo(0,0)}
+
+/* ===================== Render ===================== */
+function render(){
+  renderNav();renderEsps();
+  $('#vt').textContent=TITLES[VIEW];
+  $('#main').innerHTML=V[VIEW]();
+  if(VIEW==='informes'){const r=buildReport();lastReport=r;const f=$('#rf');if(f)f.srcdoc=r.html}
+  if(DR)renderDrawer();
+}
+function counts(){
+  const tOpen=D.temas.filter(t=>isOpen(t)&&inEsp(t)).length;
+  const pVenc=D.pagos.filter(p=>inEsp(p)&&pagoSt(p)==='vencido').length;
+  const pProx=D.pagos.filter(p=>inEsp(p)&&pagoSt(p)==='pendiente'&&p.vencimiento&&daysTo(p.vencimiento)<=7).length;
+  const rHoy=D.recordatorios.filter(r=>inEsp(r)&&!r.hecho&&r.fecha<=TODAY()).length;
+  return{tOpen,pVenc,pProx,rHoy}
+}
+function renderNav(){
+  const c=counts();
+  const it=[['inicio','Inicio',''],['temas','Temas',c.tOpen],['proyectos','Proyectos',''],['pagos','Pagos',c.pVenc?`<span class="c alert">${c.pVenc} venc.</span>`:c.pProx||''],['agenda','Agenda',c.rHoy?`<span class="c alert">${c.rHoy}</span>`:''],['docs','Documentos',''],['informes','Informes',''],['ajustes','Ajustes','']];
+  $('#nav').innerHTML=it.map(([k,l,n])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}${String(n).startsWith('<')?n:`<span class="c">${n}</span>`}</a>`).join('');
+  const b=[['inicio','Inicio'],['temas','Temas'],['pagos','Pagos'],['agenda','Agenda']];
+  $('#bnav').innerHTML=b.map(([k,l])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}</a>`).join('')+`<a class="${['proyectos','docs','informes','ajustes'].includes(VIEW)?'on':''}" onclick="moreMenu()">${ICON.mas}Más</a>`;
+  $('#sinfo').innerHTML=esc(USER?USER.email:'');
+}
+function renderEsps(){
+  const h=`<button class="chip ${!ESP?'on':''}" onclick="setEsp('')">Todo</button>`+espsSorted().map(e=>`<button class="chip ${ESP===e.id?'on':''}" onclick="setEsp('${e.id}')"><span class="dot" style="background:${e.color}"></span>${esc(e.nombre)}</button>`).join('');
+  $('#espsD').innerHTML=h;$('#espsM').innerHTML=h;
+}
+function moreMenu(){modal(`<h3>Más</h3><div class="menu">${[['proyectos','Proyectos'],['docs','Documentos'],['informes','Informes'],['ajustes','Ajustes']].map(([k,l])=>`<button class="btn full" onclick="closeModal();go('${k}')">${ICON[k].replace('<svg','<svg width="16" height="16"')} ${l}</button>`).join('')}</div>`)}
+function closeMenu(){}
+
+const V={};
+
+/* ---------- Inicio ---------- */
+function agendaItems(from,to,opts={}){
+  const out=[];
+  D.pagos.filter(inEsp).forEach(p=>{const st=pagoSt(p);if(st==='cancelado')return;
+    if(st!=='pagado'&&p.vencimiento&&p.vencimiento<=to&&(p.vencimiento>=from||opts.overdue))out.push({k:'pago',id:p.id,fecha:p.vencimiento,titulo:p.concepto,sub:[p.categoria,money(p.monto,p.moneda)].filter(Boolean).join(' · '),esp:p.espacio_id,done:false,color:st==='vencido'?'#e5534b':'#e0a43a'});
+    if(opts.paid&&st==='pagado'&&(p.fecha_pago||p.vencimiento)>=from&&(p.fecha_pago||p.vencimiento)<=to)out.push({k:'pago',id:p.id,fecha:p.fecha_pago||p.vencimiento,titulo:p.concepto,sub:'Pagado · '+money(p.monto,p.moneda),esp:p.espacio_id,done:true,color:'#2fb67c'})});
+  D.recordatorios.filter(inEsp).forEach(r=>{if(r.fecha<=to&&(r.fecha>=from||(opts.overdue&&!r.hecho))&&(!r.hecho||opts.paid))out.push({k:'rec',id:r.id,fecha:r.fecha,titulo:r.titulo,sub:[r.hora?r.hora.slice(0,5):'',r.notas].filter(Boolean).join(' · '),esp:r.espacio_id,done:r.hecho,color:'#b07cff'})});
+  D.temas.filter(t=>inEsp(t)&&isOpen(t)&&t.objetivo).forEach(t=>{if(t.objetivo<=to&&(t.objetivo>=from||opts.overdue))out.push({k:'tema',id:t.id,fecha:t.objetivo,titulo:t.titulo,sub:'Objetivo del tema · '+t.estado,esp:t.espacio_id,done:false,color:'#4c8dff'})});
+  return out.sort((a,b)=>a.fecha<b.fecha?-1:a.fecha>b.fecha?1:0);
+}
+function itemRow(i){
+  const act=i.done?'':i.k==='pago'?`<button class="btn sm ok" onclick="event.stopPropagation();payNow('${i.id}')">Pagar</button>`:i.k==='rec'?`<button class="btn sm ok" onclick="event.stopPropagation();recDone('${i.id}')">Hecho</button>`:'';
+  return `<div class="li" onclick="openDr('${i.k}','${i.id}')">${dchip(i.fecha,i.done)}<span class="dot" style="background:${i.color}"></span><div class="t"><b style="${i.done?'color:var(--mu)':''}">${esc(i.titulo)}</b><span>${esc(i.sub||'')}${i.esp&&!ESP?' · '+esc(espName(i.esp)):''}</span></div><span class="mu2 hm" style="font-size:12px">${when(i.fecha)}</span>${act}</div>`
+}
+V.inicio=()=>{
+  const op=D.temas.filter(t=>inEsp(t)&&isOpen(t));
+  const apag=D.pagos.filter(p=>inEsp(p)&&['pendiente','vencido'].includes(pagoSt(p)));
+  const venc=apag.filter(p=>pagoSt(p)==='vencido');
+  const p30=apag.filter(p=>p.vencimiento&&daysTo(p.vencimiento)<=30);
+  const tot={};p30.forEach(p=>tot[p.moneda]=(tot[p.moneda]||0)+(+p.monto||0));
+  const totS=Object.keys(tot).map(k=>money(tot[k],k)).join(' + ')||'—';
+  const att=op.filter(t=>vencido(t)||t.estado==='Bloqueado'||stale(t));
+  const recH=D.recordatorios.filter(r=>inEsp(r)&&!r.hecho&&r.fecha<=TODAY()).length;
+  const k=`<div class="kpis">
+   <div class="kpi" onclick="F.flag='';F.estado='';go('temas')"><div class="l">Temas abiertos</div><div class="v">${op.length}</div><div class="s">${op.filter(t=>t.estado==='En espera').length} en espera</div></div>
+   <div class="kpi" onclick="F.flag='atencion';go('temas')"><div class="l">Requieren atención</div><div class="v" style="${att.length?'color:#e0a43a':''}">${att.length}</div><div class="s">vencidos, bloqueados o sin novedad</div></div>
+   <div class="kpi" onclick="PF.vista='apagar';go('pagos')"><div class="l">A pagar · 30 días</div><div class="v">${p30.length}</div><div class="s num">${totS}</div></div>
+   <div class="kpi" onclick="PF.vista='apagar';go('pagos')"><div class="l">Pagos vencidos</div><div class="v" style="${venc.length?'color:#e5534b':''}">${venc.length}</div><div class="s">${venc.length?'revisar':'al día'}</div></div>
+   <div class="kpi" onclick="go('agenda')"><div class="l">Recordatorios hoy</div><div class="v" style="${recH?'color:#b07cff':''}">${recH}</div><div class="s">incluye atrasados</div></div></div>`;
+  const items=agendaItems(addDays(TODAY(),-3650),addDays(TODAY(),14),{overdue:true});
+  const ag=`<div class="sec"><h2>Próximos 14 días y atrasados <span class="r"><button class="btn sm" onclick="newRec()">+ Recordatorio</button><button class="btn sm" onclick="newPago()">+ Pago</button></span></h2>${items.length?`<div class="list">${items.slice(0,25).map(itemRow).join('')}</div>`:'<div class="empty">Nada agendado para los próximos 14 días.</div>'}</div>`;
+  const why=t=>[vencido(t)?`<span class="why" style="background:#e5534b22;color:#ff8f88">Vencido ${fd(t.objetivo)}</span>`:'',t.estado==='Bloqueado'?`<span class="why" style="background:#e5534b22;color:#ff8f88">Bloqueado</span>`:'',stale(t)?`<span class="why" style="background:#e0a43a22;color:#f0c070">${daysSince(t.actualizado)} d sin novedad</span>`:''].join(' ');
+  const at=`<div class="sec"><h2>Temas que requieren atención</h2>${att.length?`<div class="list">${att.slice(0,10).map(t=>`<div class="li" onclick="openDr('tema','${t.id}')"><span class="dot" style="background:${PC[t.prioridad]}"></span><div class="t"><b>${esc(t.titulo)}</b><span>${[!ESP?espName(t.espacio_id):'',projName(t.proyecto_id)].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</span></div><span class="hm">${why(t)}</span></div>`).join('')}</div>`:'<div class="empty">Sin alertas.</div>'}</div>`;
+  const acts=D.bitacora.filter(b=>b.tipo==='usr'&&(()=>{const t=G.tema(b.tema_id);return t&&inEsp(t)})()).sort((a,b)=>a.fecha<b.fecha?1:-1).slice(0,8);
+  const ac=`<div class="sec"><h2>Últimos avances</h2>${acts.length?`<div class="list">${acts.map(b=>{const t=G.tema(b.tema_id);return `<div class="li" onclick="openDr('tema','${t.id}')"><div class="t"><b>${esc(t.titulo)}</b><span>${esc(b.texto)}</span></div><span class="mu2" style="font-size:12px">${fd(b.fecha)}</span></div>`}).join('')}</div>`:'<div class="empty">Todavía no registraste avances.</div>'}</div>`;
+  const empty=!D.temas.length&&!D.pagos.length&&!D.recordatorios.length?`<div class="sec"><div class="empty" style="text-align:left;line-height:1.7"><b style="color:var(--tx)">Tablero vacío, listo para usar.</b><br>Arriba elegís el espacio (Ceta, EFM, Personal o los que crees en Ajustes). Con <b>+ Nuevo</b> cargás un tema, un pago, un recordatorio o un documento.</div></div>`:'';
+  return k+empty+`<div class="grid2"><div>${ag}</div><div>${at}${ac}</div></div>`;
+};
+
+/* ---------- Temas ---------- */
+function hayT(t){return norm([t.titulo,t.descripcion,t.area,t.contraparte,(t.tags||[]).join(' '),projName(t.proyecto_id),espName(t.espacio_id),t.estado,...pendsOf(t.id).map(p=>p.texto),...logsOf(t.id).map(b=>b.texto),...docsOf('tema_id',t.id).map(d=>d.nombre)].join(' '))}
+function matchQ(h){if(!Q.trim())return true;return norm(Q).split(/\s+/).filter(Boolean).every(w=>h.includes(w))}
+function filteredT(){
+  let L=D.temas.filter(t=>inEsp(t)&&matchQ(hayT(t)));
+  if(F.estado)L=L.filter(t=>t.estado===F.estado);else if(!F.cerrados&&!Q.trim()&&F.modo==='lista')L=L.filter(isOpen);
+  if(F.proyecto)L=L.filter(t=>F.proyecto==='_none'?!t.proyecto_id:t.proyecto_id===F.proyecto);
+  if(F.prio)L=L.filter(t=>t.prioridad===F.prio);
+  if(F.flag==='atencion')L=L.filter(t=>vencido(t)||t.estado==='Bloqueado'||stale(t));
+  const k=F.sort,d=F.dir,po={Alta:0,Media:1,Baja:2};
+  L.sort((a,b)=>{let x,y;if(k==='prioridad'){x=po[a.prioridad];y=po[b.prioridad]}else if(k==='estado'){x=ESTADOS.indexOf(a.estado);y=ESTADOS.indexOf(b.estado)}else if(k==='proyecto'){x=projName(a.proyecto_id)||'~';y=projName(b.proyecto_id)||'~'}else if(k==='objetivo'){x=a.objetivo||'9999';y=b.objetivo||'9999'}else{x=a[k]||'';y=b[k]||''}return x<y?-d:x>y?d:0});
+  return L;
+}
+function sortBy(k){if(F.sort===k)F.dir*=-1;else{F.sort=k;F.dir=k==='actualizado'?-1:1}render()}
+function setF(k,v){F[k]=v;if(k==='modo')localStorage.setItem('tb_modo',v);render()}
+function projOpts(sel,espId,none=true){const L=D.proyectos.filter(p=>!espId||p.espacio_id===espId);return (none?'<option value="">— Sin proyecto —</option>':'')+L.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.nombre)}${!espId?' · '+esc(espName(p.espacio_id)):''}</option>`).join('')}
+function espOpts(sel,none){return (none?'<option value="">— Sin espacio —</option>':'')+espsSorted().map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${esc(e.nombre)}</option>`).join('')}
+function pendCell(t){const{tot,dn}=pendStat(t.id);if(!tot)return '<span class="mu2">—</span>';return `<span class="mbar"><span class="bar"><span style="width:${Math.round(dn/tot*100)}%;background:var(--ok)"></span></span><span class="num mu">${dn}/${tot}</span></span>`}
+V.temas=()=>{
+  const L=filteredT();
+  const fl=`<div class="filters">
+   <div class="seg"><button class="${F.modo==='lista'?'on':''}" onclick="setF('modo','lista')">Lista</button><button class="${F.modo==='tablero'?'on':''}" onclick="setF('modo','tablero')">Tablero</button></div>
+   ${F.modo==='lista'?`<select onchange="setF('estado',this.value)"><option value="">Estado: abiertos</option>${ESTADOS.map(e=>`<option ${F.estado===e?'selected':''}>${e}</option>`).join('')}</select>`:''}
+   <select onchange="setF('proyecto',this.value)"><option value="">Proyecto: todos</option><option value="_none" ${F.proyecto==='_none'?'selected':''}>Sin proyecto</option>${D.proyectos.filter(inEsp).map(p=>`<option value="${p.id}" ${F.proyecto===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select>
+   <select onchange="setF('prio',this.value)" class="hm"><option value="">Prioridad: todas</option>${PRIOS.map(p=>`<option ${F.prio===p?'selected':''}>${p}</option>`).join('')}</select>
+   ${F.modo==='lista'?`<label class="ck"><input type="checkbox" ${F.cerrados?'checked':''} onchange="setF('cerrados',this.checked)"> Cerrados</label>`:''}
+   ${F.flag?`<span class="pill" style="color:#f0c070;border-color:#e0a43a55">Requieren atención <a onclick="setF('flag','')">✕</a></span>`:''}
+   <div class="sp"></div><span class="mu" style="font-size:12.5px">${L.length} tema${L.length===1?'':'s'}</span>
+   <button class="btn sm pri" onclick="newTema()">+ Tema</button></div>`;
+  if(F.modo==='tablero'){
+    return fl+`<div class="board">${ESTADOS.map(e=>{let C=L.filter(t=>t.estado===e);if(e==='Cerrado')C=C.filter(t=>!t.cerrado_en||daysSince(t.cerrado_en)<=30);
+      return `<div class="col" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropCard(event,'${e}');this.classList.remove('over')"><div class="colh"><span class="dot" style="background:${EC[e]}"></span>${e}<span class="n">${C.length}</span></div>${C.map(card).join('')||'<div class="mu2" style="font-size:12px;padding:6px">—</div>'}</div>`}).join('')}</div>`;
+  }
+  if(!L.length)return fl+`<div class="empty">No hay temas${Q||F.estado||F.proyecto||F.flag?' con estos filtros':''}. <a onclick="newTema()">Crear uno</a></div>`;
+  const th=(k,l,c='')=>`<th class="${F.sort===k?'s':''} ${c}" onclick="sortBy('${k}')">${l}${F.sort===k?(F.dir>0?' ↑':' ↓'):''}</th>`;
+  return fl+`<div class="tbl"><table><thead><tr>${th('titulo','Tema')}${th('estado','Estado')}${th('prioridad','Prioridad','hm')}<th class="hm">Pendientes</th>${th('objetivo','Objetivo','hm')}${th('actualizado','Últ. act.','hm')}</tr></thead><tbody>${L.map(t=>`<tr class="rw" onclick="openDr('tema','${t.id}')"><td><div style="font-weight:560">${esc(t.titulo)}</div><div class="mu" style="font-size:12px;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap">${!ESP?etag(t.espacio_id):''}${t.proyecto_id?`<span>${esc(projName(t.proyecto_id))}</span>`:''}${t.contraparte?`<span>· ${esc(t.contraparte)}</span>`:''}</div></td><td>${pill(t.estado)}</td><td class="hm">${prio(t.prioridad)}</td><td class="hm">${pendCell(t)}</td><td class="num hm ${vencido(t)?'err':''}">${fd(t.objetivo)}</td><td class="num hm ${stale(t)?'warn':'mu'}">${ago(t.actualizado)}</td></tr>`).join('')}</tbody></table></div>`;
+};
+function card(t){const{tot,dn}=pendStat(t.id);const nd=docsOf('tema_id',t.id).length;return `<div class="card" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${t.id}')" onclick="openDr('tema','${t.id}')"><div class="t">${esc(t.titulo)}</div><div class="m"><span style="display:inline-flex;align-items:center;gap:5px"><span class="dot" style="background:${PC[t.prioridad]}"></span>${esc(t.prioridad)}</span>${!ESP?etag(t.espacio_id):''}${t.proyecto_id?`<span>${esc(projName(t.proyecto_id))}</span>`:''}${tot?`<span>☑ ${dn}/${tot}</span>`:''}${nd?`<span>📎 ${nd}</span>`:''}${t.objetivo?`<span class="${vencido(t)?'err':''}">⏱ ${fd(t.objetivo)}</span>`:''}</div></div>`}
+function dropCard(ev,e){ev.preventDefault();const t=G.tema(ev.dataTransfer.getData('text/plain'));if(t)setEstado(t.id,e)}
+async function setEstado(id,e){const t=G.tema(id);if(!t||t.estado===e)return;const prev=t.estado;const patch={estado:e,cerrado_en:e==='Cerrado'?now():null,actualizado:now()};render();await upd('temas',id,patch);await logT(id,`Estado: ${prev} → ${e}`);render();toast(`${t.titulo.slice(0,40)} → ${e}`)}
+
+/* ---------- Proyectos ---------- */
+V.proyectos=()=>{
+  const esps=ESP?[G.esp(ESP)].filter(Boolean):espsSorted();
+  const block=(p,espId)=>{
+    const L=D.temas.filter(t=>p?t.proyecto_id===p.id:(!t.proyecto_id&&t.espacio_id===espId));
+    if(!p&&!L.length)return '';
+    const cl=L.filter(t=>t.estado==='Cerrado').length;
+    const segs=ESTADOS.map(e=>{const n=L.filter(t=>t.estado===e).length;return n?`<span title="${e}: ${n}" style="width:${n/L.length*100}%;background:${EC[e]}"></span>`:''}).join('');
+    const sorted=[...L].sort((a,b)=>ESTADOS.indexOf(a.estado)-ESTADOS.indexOf(b.estado));
+    return `<div class="pc"><div style="display:flex;gap:8px;align-items:flex-start"><div style="flex:1;min-width:0"><div class="pt">${p?esc(p.nombre):'Temas sin proyecto'}</div>${p&&p.descripcion?`<div class="mu" style="font-size:12.5px;margin-top:3px;line-height:1.4">${esc(p.descripcion)}</div>`:''}</div>${p&&p.estado!=='Activo'?`<span class="pill" style="color:#e0a43a;border-color:#e0a43a55">${esc(p.estado)}</span>`:''}${p?`<button class="btn ghost sm" onclick="editProj('${p.id}')">Editar</button>`:''}</div>
+    <div style="margin-top:12px" class="bar">${segs}</div>
+    <div class="mu" style="font-size:12px;margin-top:6px">${cl} de ${L.length} temas cerrados${p&&p.objetivo?` · objetivo ${fd(p.objetivo)}`:''}</div>
+    <div class="tl">${sorted.map(t=>`<div onclick="openDr('tema','${t.id}')"><span class="dot" style="background:${EC[t.estado]}"></span><span class="tn">${esc(t.titulo)}</span><span class="mu2" style="font-size:11.5px">${ago(t.actualizado)}</span></div>`).join('')||'<div class="mu2" style="cursor:default">Sin temas</div>'}</div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" onclick="newTema('${p?p.id:''}','${espId}')">+ Tema</button>${p?`<button class="btn sm" onclick="RS.k='proyecto';RS.p='${p.id}';go('informes')">Informe</button>`:''}</div></div>`};
+  const html=esps.map(e=>{const ps=D.proyectos.filter(p=>p.espacio_id===e.id).sort((a,b)=>PEST.indexOf(a.estado)-PEST.indexOf(b.estado)||a.nombre.localeCompare(b.nombre));const inner=ps.map(p=>block(p,e.id)).join('')+block(null,e.id);
+    return `<div class="sec"><h2><span class="dot" style="background:${e.color}"></span>${esc(e.nombre)} <span class="r"><button class="btn sm" onclick="newProj('${e.id}')">+ Proyecto</button></span></h2>${inner?`<div class="pgrid">${inner}</div>`:'<div class="empty">Sin proyectos ni temas en este espacio.</div>'}</div>`}).join('');
+  return html||'<div class="empty">Creá un espacio en Ajustes.</div>';
+};
+
+/* ---------- Pagos ---------- */
+V.pagos=()=>{
+  let L=D.pagos.filter(p=>inEsp(p)&&matchQ(norm([p.concepto,p.categoria,p.notas,p.medio,espName(p.espacio_id)].join(' '))));
+  if(PF.cat)L=L.filter(p=>p.categoria===PF.cat);
+  let title='';
+  if(PF.vista==='apagar'){L=L.filter(p=>['pendiente','vencido'].includes(pagoSt(p))).sort((a,b)=>(a.vencimiento||'9999')<(b.vencimiento||'9999')?-1:1);title='Pendientes de pago'}
+  else if(PF.vista==='pagados'){L=L.filter(p=>pagoSt(p)==='pagado').sort((a,b)=>(a.fecha_pago||'')<(b.fecha_pago||'')?1:-1);title='Pagados'}
+  else {L=L.filter(p=>(p.estado==='Pagado'?(p.fecha_pago||p.vencimiento||''):(p.vencimiento||'')).startsWith(PF.mes)).sort((a,b)=>(a.vencimiento||'')<(b.vencimiento||'')?-1:1);title='Mes '+PF.mes}
+  const tot=(arr)=>{const t={};arr.forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto||0));return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'};
+  const allE=D.pagos.filter(inEsp);
+  const venc=allE.filter(p=>pagoSt(p)==='vencido'),p30=allE.filter(p=>pagoSt(p)==='pendiente'&&p.vencimiento&&daysTo(p.vencimiento)<=30);
+  const mesAct=TODAY().slice(0,7),pagMes=allE.filter(p=>p.estado==='Pagado'&&(p.fecha_pago||'').startsWith(mesAct));
+  const sum=`<div class="sum"><div class="kpi"><div class="l">Vencidos</div><div class="v" style="${venc.length?'color:#e5534b':''}">${venc.length}</div><div class="s num">${tot(venc)}</div></div><div class="kpi"><div class="l">A pagar · 30 días</div><div class="v">${p30.length}</div><div class="s num">${tot(p30)}</div></div><div class="kpi"><div class="l">Pagado este mes</div><div class="v">${pagMes.length}</div><div class="s num">${tot(pagMes)}</div></div></div>`;
+  const fl=`<div class="filters"><div class="seg"><button class="${PF.vista==='apagar'?'on':''}" onclick="PF.vista='apagar';render()">A pagar</button><button class="${PF.vista==='pagados'?'on':''}" onclick="PF.vista='pagados';render()">Pagados</button><button class="${PF.vista==='mes'?'on':''}" onclick="PF.vista='mes';render()">Por mes</button></div>${PF.vista==='mes'?`<input type="month" value="${PF.mes}" onchange="PF.mes=this.value;render()">`:''}<select onchange="PF.cat=this.value;render()"><option value="">Categoría: todas</option>${PCATS.map(c=>`<option ${PF.cat===c?'selected':''}>${c}</option>`).join('')}</select><div class="sp"></div><span class="mu num" style="font-size:12.5px">${L.length} · ${tot(L)}</span><button class="btn sm hm" onclick="exportPagosCSV(window._pv)">⤓ CSV</button><button class="btn sm pri" onclick="newPago()">+ Pago</button></div>`;
+  window._pv=L;
+  if(!L.length)return sum+fl+`<div class="empty">${PF.vista==='apagar'?'No hay pagos pendientes.':'Sin pagos en esta vista.'} <a onclick="newPago()">Registrar uno</a></div>`;
+  return sum+fl+`<div class="list">${L.map(p=>{const st=pagoSt(p);const f=st==='pagado'?(p.fecha_pago||p.vencimiento):p.vencimiento;const nd=docsOf('pago_id',p.id).length;return `<div class="li" onclick="openDr('pago','${p.id}')">${f?dchip(f,st==='pagado'||st==='cancelado'):'<div class="dchip"><b>—</b><span>s/f</span></div>'}<div class="t"><b>${esc(p.concepto)}</b><span>${[p.categoria,!ESP?espName(p.espacio_id):'',p.recurrencia?'↻ '+RECS[p.recurrencia]:'',st==='pagado'&&p.medio?p.medio:'',nd?'📎 '+nd:''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</span></div><span class="amt">${money(p.monto,p.moneda)}</span><span class="hm">${ppill(p)}</span>${st==='pendiente'||st==='vencido'?`<button class="btn sm ok" onclick="event.stopPropagation();payNow('${p.id}')">Pagar</button>`:''}</div>`}).join('')}</div>`;
+};
+async function payNow(id){const p=G.pago(id);modal(`<h3>Registrar pago</h3><div class="mu" style="margin-bottom:12px">${esc(p.concepto)} · ${money(p.monto,p.moneda)}</div>
+  <div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Fecha de pago</label><input type="date" id="pf" value="${TODAY()}"></div><div class="f"><label>Monto pagado</label><input id="pm" inputmode="decimal" value="${NF.format(+p.monto||0)}"></div><div class="f" style="grid-column:1/-1"><label>Medio</label><select id="pmed">${MEDIOS.map(m=>`<option ${m===p.medio?'selected':''}>${m}</option>`).join('')}</select></div></div>
+  <div class="f"><label>Comprobante (opcional)</label><input type="file" id="pfile" multiple></div>
+  ${p.recurrencia?`<div class="mu" style="font-size:12.5px">↻ Se va a generar el próximo vencimiento (${RECS[p.recurrencia].toLowerCase()}).</div>`:''}
+  <div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn ok" id="pbtn" onclick="confirmPay('${id}')">Confirmar pago</button></div>`)}
+async function confirmPay(id){const p=G.pago(id);$('#pbtn').disabled=true;const files=$('#pfile').files;const fp=$('#pf').value||TODAY(),monto=parseMonto($('#pm').value),medio=$('#pmed').value;
+  await upd('pagos',id,{estado:'Pagado',fecha_pago:fp,monto,medio});
+  if(files&&files.length)await uploadFiles(files,{pago_id:id,espacio_id:p.espacio_id,tema_id:p.tema_id,categoria:'Comprobante'});
+  if(p.tema_id)await logT(p.tema_id,`Pago registrado: ${p.concepto} · ${money(monto,p.moneda)}`);
+  let msg='Pago registrado';
+  if(p.recurrencia&&p.vencimiento){const nv=addMonths(p.vencimiento,RECM[p.recurrencia]);const ya=D.pagos.some(x=>x.concepto===p.concepto&&x.vencimiento===nv&&x.espacio_id===p.espacio_id);if(!ya){await ins('pagos',{concepto:p.concepto,categoria:p.categoria,monto:p.monto,moneda:p.moneda,vencimiento:nv,espacio_id:p.espacio_id,tema_id:p.tema_id,recurrencia:p.recurrencia,medio:p.medio,notas:p.notas,estado:'A pagar'});msg+=` · próximo vencimiento ${fd(nv)}`}}
+  closeModal();render();toast(msg)}
+
+/* ---------- Agenda ---------- */
+V.agenda=()=>{
+  const [y,m]=CAL.m.split('-').map(Number);const first=new Date(y,m-1,1);const start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
+  const from=localISO(start),to=addDays(from,41);
+  const items=agendaItems(from,to,{paid:true});const by={};items.forEach(i=>(by[i.fecha]=by[i.fecha]||[]).push(i));
+  let cells='';for(let i=0;i<42;i++){const d=addDays(from,i);const its=by[d]||[];const out=+d.slice(5,7)!==m;
+    cells+=`<div class="d ${out?'out':''} ${d===TODAY()?'today':''} ${d===CAL.sel?'sel':''}" onclick="CAL.sel='${d}';render()"><span class="n">${+d.slice(8)}</span>${its.slice(0,3).map(it=>`<div class="ev" style="border-color:${it.color};background:${it.color}22;${it.done?'opacity:.55':''}">${esc(it.titulo)}</div>`).join('')}${its.length>3?`<div class="mu2" style="font-size:10.5px">+${its.length-3}</div>`:''}</div>`}
+  const head=`<div class="filters"><button class="btn sm" onclick="calMove(-1)">‹</button><b style="min-width:150px;text-align:center">${MESL[m-1]} ${y}</b><button class="btn sm" onclick="calMove(1)">›</button><button class="btn sm ghost" onclick="CAL.m=TODAY().slice(0,7);CAL.sel=TODAY();render()">Hoy</button><div class="sp"></div><span class="hm" style="display:flex;gap:10px;font-size:12px;color:var(--mu)"><span class="etag"><span class="dot" style="background:#e0a43a"></span>Pago</span><span class="etag"><span class="dot" style="background:#b07cff"></span>Recordatorio</span><span class="etag"><span class="dot" style="background:#4c8dff"></span>Objetivo de tema</span></span><button class="btn sm" onclick="newPago(CAL.sel)">+ Pago</button><button class="btn sm pri" onclick="newRec(CAL.sel)">+ Recordatorio</button></div>`;
+  const cal=`<div class="cal">${['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>`<div class="h">${d}</div>`).join('')}${cells}</div>`;
+  const sel=agendaItems(CAL.sel,CAL.sel,{paid:true});
+  const day=`<div class="sec"><h2>${new Date(CAL.sel+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'})}</h2>${sel.length?`<div class="list">${sel.map(itemRow).join('')}</div>`:'<div class="empty">Nada este día.</div>'}</div>`;
+  const prox=agendaItems(TODAY(),addDays(TODAY(),30));
+  const px=`<div class="sec"><h2>Próximos 30 días</h2>${prox.length?`<div class="list">${prox.map(itemRow).join('')}</div>`:'<div class="empty">Sin vencimientos ni recordatorios.</div>'}</div>`;
+  return head+`<div class="grid2" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)"><div>${cal}</div><div>${day}${px}</div></div>`;
+};
+function calMove(n){const[y,m]=CAL.m.split('-').map(Number);const d=new Date(y,m-1+n,1);CAL.m=localISO(d).slice(0,7);render()}
+async function recDone(id){const r=G.rec(id);await upd('recordatorios',id,{hecho:!r.hecho});if(r.tema_id&&!r.hecho)await logT(r.tema_id,'Recordatorio cumplido: '+r.titulo);render();toast(r.hecho?'Marcado como hecho':'Reabierto')}
+
+/* ---------- Documentos ---------- */
+V.docs=()=>{
+  let L=D.documentos.filter(d=>inEsp(d)&&matchQ(norm([d.nombre,d.categoria,d.nota,(G.tema(d.tema_id)||{}).titulo,(G.pago(d.pago_id)||{}).concepto,espName(d.espacio_id)].join(' '))));
+  if(DF.cat)L=L.filter(d=>d.categoria===DF.cat);
+  L.sort((a,b)=>a.creado<b.creado?1:-1);window._dv=L;
+  const fl=`<div class="filters"><select onchange="DF.cat=this.value;render()"><option value="">Categoría: todas</option>${CATS.map(c=>`<option ${DF.cat===c?'selected':''}>${c}</option>`).join('')}</select><div class="sp"></div><span class="mu" style="font-size:12.5px">${L.length} documento${L.length===1?'':'s'}</span>${L.length?`<button class="btn sm hm" onclick="dlMany()">⤓ Descargar filtrados</button><button class="btn sm hm" onclick="exportDocsCSV()">⤓ Índice CSV</button>`:''}<button class="btn sm" onclick="newLink()">+ Link</button><button class="btn sm pri" onclick="newDoc()">+ Subir</button></div>`;
+  if(!L.length)return fl+`<div class="empty">Sin documentos. Subí archivos acá o desde cada tema o pago.</div>`;
+  return fl+`<div class="list">${L.map(d=>{const t=G.tema(d.tema_id),p=G.pago(d.pago_id);const ref=t?`Tema: ${t.titulo}`:p?`Pago: ${p.concepto}`:'';return `<div class="li" onclick="${t?`openDr('tema','${t.id}')`:p?`openDr('pago','${p.id}')`:`editDoc('${d.id}')`}"><span class="att" style="margin:0;padding:0;border:none;background:none"><span class="k">${d.url?'link':esc(ext(d.nombre))}</span></span><div class="t"><b>${esc(d.nombre)}</b><span>${[d.categoria,!ESP?espName(d.espacio_id):'',ref,d.nota].filter(Boolean).map(esc).join(' · ')}</span></div><span class="mu2 num hm" style="font-size:12px">${fd(d.creado)}${d.size?' · '+fsize(d.size):''}</span><button class="btn sm" onclick="event.stopPropagation();dlDoc('${d.id}')">${d.url?'Abrir':'⤓'}</button></div>`}).join('')}</div>`;
+};
+async function uploadFiles(files,meta){let n=0;for(const f of files){if(f.size>50*1024*1024){toast(f.name+' supera 50 MB');continue}busy(1);try{const path=`${USER.id}/${uid()}-${slug(f.name.replace(/\.[^.]+$/,''))}.${ext(f.name)==='—'?'bin':ext(f.name).toLowerCase()}`;const{error}=await sb.storage.from('docs').upload(path,f,{contentType:f.type||'application/octet-stream'});if(error)throw error;await ins('documentos',{...meta,nombre:f.name,path,size:f.size,mime:f.type});n++}catch(e){fail(e)}finally{busy(0)}}
+  if(n)toast(n+' archivo'+(n>1?'s':'')+' subido'+(n>1?'s':''));return n}
+async function dlDoc(id){const d=G.doc(id);if(!d)return;if(d.url){if(/^[a-z]+:\/\//i.test(d.url))window.open(d.url,'_blank');else{try{await navigator.clipboard.writeText(d.url);toast('Ruta copiada')}catch(e){toast(d.url)}}return}
+  busy(1);try{const{data,error}=await sb.storage.from('docs').download(d.path);if(error)throw error;download(data,d.nombre)}catch(e){fail(e)}finally{busy(0)}}
+async function dlMany(){const L=(window._dv||[]).filter(d=>!d.url);if(!L.length){toast('No hay archivos (solo links)');return}toast('Descargando '+L.length+'…');for(const d of L){await dlDoc(d.id);await new Promise(r=>setTimeout(r,400))}}
+async function delDoc(id,after){const d=G.doc(id);confirmBox(`¿Eliminar <b>${esc(d.nombre)}</b>?`,'Eliminar',async()=>{if(d.path){busy(1);await sb.storage.from('docs').remove([d.path]);busy(0)}await del('documentos',id);if(d.tema_id)await touch(d.tema_id,'Adjunto eliminado: '+d.nombre);render();after&&after()})}
+function newDoc(){modal(`<h3>Subir documento</h3><div class="f"><label>Archivos</label><input type="file" id="nf" multiple></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Espacio</label><select id="ne">${espOpts(ESP,true)}</select></div><div class="f"><label>Categoría</label><select id="nc">${CATS.map(c=>`<option>${c}</option>`).join('')}</select></div></div><div class="f"><label>Vincular a tema (opcional)</label><select id="nt"><option value="">—</option>${D.temas.filter(inEsp).map(t=>`<option value="${t.id}">${esc(t.titulo)}</option>`).join('')}</select></div><div class="f"><label>Nota</label><input id="nn"></div><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" id="nb" onclick="saveNewDoc()">Subir</button></div>`)}
+async function saveNewDoc(){const fs=$('#nf').files;if(!fs.length){toast('Elegí al menos un archivo');return}$('#nb').disabled=true;const tid=$('#nt').value||null;const t=tid&&G.tema(tid);const meta={espacio_id:t?t.espacio_id:($('#ne').value||null),tema_id:tid,categoria:$('#nc').value,nota:$('#nn').value.trim()};const n=await uploadFiles(fs,meta);if(tid&&n)await touch(tid,'Adjunto: '+[...fs].map(f=>f.name).join(', '));closeModal();render()}
+function newLink(meta={}){window._lm=meta;modal(`<h3>Agregar link</h3><div class="f"><label>Nombre</label><input id="ln" placeholder="Ej. Carpeta Drive"></div><div class="f"><label>URL o ruta</label><input id="lu" placeholder="https://…"></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Categoría</label><select id="lc">${CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>${meta.tema_id||meta.pago_id?'':`<div class="f"><label>Espacio</label><select id="lesp">${espOpts(ESP,true)}</select></div>`}</div><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="saveLink()">Agregar</button></div>`)}
+async function saveLink(){const n=$('#ln').value.trim(),u=$('#lu').value.trim();if(!u){$('#lu').focus();return}const m=window._lm||{};const row={...m,nombre:n||u,url:u,categoria:$('#lc').value};if(!m.tema_id&&!m.pago_id)row.espacio_id=$('#lesp').value||null;await ins('documentos',row);if(m.tema_id)await touch(m.tema_id,'Link agregado: '+(n||u));closeModal();render()}
+function editDoc(id){const d=G.doc(id);modal(`<h3>Documento</h3><div class="f"><label>Nombre</label><input id="dn" value="${esc(d.nombre)}"></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Categoría</label><select id="dc">${CATS.map(c=>`<option ${c===d.categoria?'selected':''}>${c}</option>`).join('')}</select></div><div class="f"><label>Espacio</label><select id="de">${espOpts(d.espacio_id,true)}</select></div></div><div class="f"><label>Nota</label><input id="dno" value="${esc(d.nota)}"></div><div class="mf"><button class="btn danger" style="margin-right:auto" onclick="closeModal();delDoc('${id}')">Eliminar</button><button class="btn" onclick="dlDoc('${id}')">${d.url?'Abrir':'Descargar'}</button><button class="btn pri" onclick="saveDoc('${id}')">Guardar</button></div>`)}
+async function saveDoc(id){await upd('documentos',id,{nombre:$('#dn').value.trim()||'Sin nombre',categoria:$('#dc').value,espacio_id:$('#de').value||null,nota:$('#dno').value.trim()});closeModal();render()}
+
+/* ---------- Informes ---------- */
+V.informes=()=>{
+  const kinds=[['general','General (espacio seleccionado)'],['proyecto','Por proyecto'],['tema','Por tema'],['novedades','Novedades desde una fecha'],['pagos','Pagos del mes']];
+  let param='';
+  if(RS.k==='proyecto'){const L=D.proyectos.filter(inEsp);if(!RS.p||!G.proj(RS.p))RS.p=(L[0]||{}).id||'';param=`<div class="f"><label>Proyecto</label><select onchange="RS.p=this.value;render()">${projOpts(RS.p,ESP,false)}</select></div>`}
+  if(RS.k==='tema'){const L=D.temas.filter(inEsp).sort((a,b)=>a.titulo.localeCompare(b.titulo));if(!RS.p||!G.tema(RS.p))RS.p=(L[0]||{}).id||'';param=`<div class="f"><label>Tema</label><select onchange="RS.p=this.value;render()">${L.map(t=>`<option value="${t.id}" ${t.id===RS.p?'selected':''}>${esc(t.titulo)}</option>`).join('')}</select></div>`}
+  if(RS.k==='novedades')param=`<div class="f"><label>Desde</label><input type="date" value="${RS.since}" onchange="RS.since=this.value;render()"></div>`;
+  if(RS.k==='pagos')param=`<div class="f"><label>Mes</label><input type="month" value="${RS.mes}" onchange="RS.mes=this.value;render()"></div>`;
+  return `<div class="rep"><div class="pc">
+   <div class="f"><label>Tipo de informe</label><select onchange="RS.k=this.value;RS.p='';render()">${kinds.map(([k,l])=>`<option value="${k}" ${RS.k===k?'selected':''}>${l}</option>`).join('')}</select></div>${param}
+   ${['general','proyecto'].includes(RS.k)?`<label class="ck2"><input type="checkbox" ${RS.c?'checked':''} onchange="RS.c=this.checked;render()"> Incluir temas cerrados</label>`:''}
+   ${['general','proyecto','tema'].includes(RS.k)?`<label class="ck2"><input type="checkbox" ${RS.b?'checked':''} onchange="RS.b=this.checked;render()"> Detalle completo</label><label class="ck2"><input type="checkbox" ${RS.sys?'checked':''} onchange="RS.sys=this.checked;render()"> Incluir movimientos automáticos</label>`:''}
+   <div class="hr"></div><div style="display:flex;flex-direction:column;gap:6px"><button class="btn pri" onclick="download(new Blob([lastReport.html],{type:'text/html'}),lastReport.name)">⤓ Descargar informe</button><button class="btn" onclick="printRep()">⎙ Imprimir / PDF</button></div>
+   <div class="hr"></div><div class="mu" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:650;margin-bottom:6px">Exportar</div>
+   <div style="display:flex;flex-direction:column;gap:6px"><button class="btn sm" onclick="exportTemasCSV()">⤓ Temas (CSV)</button><button class="btn sm" onclick="exportPagosCSV(D.pagos.filter(inEsp))">⤓ Pagos (CSV)</button><button class="btn sm" onclick="exportDocsCSV()">⤓ Índice de documentos (CSV)</button></div>
+  </div><iframe id="rf"></iframe></div>`;
+};
+function printRep(){const f=$('#rf');try{f.contentWindow.focus();f.contentWindow.print()}catch(e){const w=window.open('','_blank');w.document.write(lastReport.html);w.document.close();w.print()}}
+const RCSS=`body{font-family:Inter,"Segoe UI",system-ui,Arial,sans-serif;background:#0b0d10;color:#e7e9ec;margin:0;padding:28px 34px;font-size:13px;line-height:1.45}
+h1{font-size:20px;margin:0 0 4px;font-weight:650}h2{font-size:12.5px;margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid #2a303a;text-transform:uppercase;letter-spacing:.6px;color:#aab2bf}
+h3{font-size:14px;margin:0 0 4px;font-weight:620}.sub{color:#8b93a1;font-size:12px}
+table{width:100%;border-collapse:collapse;margin-top:4px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #232831;vertical-align:top}th{font-size:10.5px;text-transform:uppercase;color:#8b93a1;letter-spacing:.4px}
+.kp{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.kp div{border:1px solid #2a303a;border-radius:6px;padding:8px 12px;min-width:110px}.kp b{display:block;font-size:19px}.kp span{font-size:10.5px;color:#8b93a1;text-transform:uppercase;letter-spacing:.4px}
+.st{font-weight:650;white-space:nowrap}.box{border:1px solid #2a303a;border-radius:8px;padding:12px 14px;margin-top:10px;page-break-inside:avoid}
+.mu{color:#8b93a1}.meta{color:#8b93a1;font-size:12px;margin:2px 0 8px}.lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:#8b93a1;margin-top:10px;font-weight:650}
+ul{margin:4px 0;padding-left:18px}li{margin:2px 0}.done{color:#8b93a1;text-decoration:line-through}.d{color:#8b93a1;font-size:11.5px;white-space:nowrap;padding-right:10px}
+.lg td{border:none;padding:3px 8px 3px 0}.pre{white-space:pre-wrap}.r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+@media print{body{background:#fff;color:#111;padding:0}h2{color:#333;border-color:#bbb}th,td{border-color:#ddd}.box,.kp div{border-color:#ccc}.mu,.sub,th,.kp span,.meta,.lbl,.d{color:#555}}
+@page{margin:14mm}`;
+const st=e=>`<span class="st" style="color:${EC[e]}">${esc(e)}</span>`;
+function topicBlock(t,full){
+  const ps=pendsOf(t.id),open=ps.filter(p=>!p.hecho),done=ps.filter(p=>p.hecho);
+  let logs=logsOf(t.id).filter(b=>RS.sys||b.tipo==='usr');if(!full)logs=logs.slice(-3);logs=[...logs].reverse();const docs=docsOf('tema_id',t.id);
+  return `<div class="box"><h3>${esc(t.titulo)} · ${st(t.estado)}</h3><div class="meta">${[espName(t.espacio_id),t.proyecto_id?'Proyecto: '+esc(projName(t.proyecto_id)):'','Prioridad: '+esc(t.prioridad),t.contraparte?'Contraparte: '+esc(t.contraparte):'',t.objetivo?'Objetivo: '+fd(t.objetivo)+(vencido(t)?' (vencido)':''):'','Últ. act.: '+fd(t.actualizado)].filter(Boolean).join(' · ')}</div>
+  ${t.descripcion?`<div class="pre">${esc(t.descripcion)}</div>`:''}
+  ${ps.length?`<div class="lbl">Qué falta (${done.length}/${ps.length} resueltos)</div><ul>${open.map(p=>`<li>${esc(p.texto)}</li>`).join('')}${full?done.map(p=>`<li class="done">${esc(p.texto)}</li>`).join(''):''}</ul>`:''}
+  ${logs.length?`<div class="lbl">${full?'Bitácora':'Últimos avances'}</div><table class="lg">${logs.map(b=>`<tr><td class="d">${fd(b.fecha)}</td><td class="pre">${esc(b.texto)}</td></tr>`).join('')}</table>`:''}
+  ${docs.length?`<div class="lbl">Documentación (${docs.length})</div><ul>${docs.map(a=>`<li>${esc(a.nombre)} <span class="mu">— ${esc(a.categoria||'')}${a.nota?' · '+esc(a.nota):''}</span></li>`).join('')}</ul>`:''}</div>`}
+function topicTable(L){return `<table><tr><th>Tema</th><th>Estado</th><th>Prioridad</th><th>Pendientes</th><th>Objetivo</th><th>Último avance</th></tr>${L.map(t=>{const s=pendStat(t.id),lu=lastUser(t.id);return `<tr><td>${esc(t.titulo)}</td><td>${st(t.estado)}</td><td>${esc(t.prioridad)}</td><td>${s.tot?s.open+' abiertos':'—'}</td><td>${fd(t.objetivo)}${vencido(t)?' ⚠':''}</td><td>${lu?esc(lu.texto.slice(0,140)):'—'}</td></tr>`}).join('')}</table>`}
+function buildReport(){
+  const gen=new Date().toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const scope=ESP?espName(ESP):'Todos los espacios';
+  const head=(ti,sub)=>`<h1>${esc(ti)}</h1><div class="sub">${esc(sub||scope)} · Generado ${gen}</div>`;
+  const po={Alta:0,Media:1,Baja:2};const ord=L=>[...L].sort((a,b)=>ESTADOS.indexOf(a.estado)-ESTADOS.indexOf(b.estado)||po[a.prioridad]-po[b.prioridad]);
+  let body='',name='';
+  if(RS.k==='general'){
+    const all=D.temas.filter(inEsp),op=all.filter(isOpen),base=all.filter(t=>RS.c||isOpen(t));
+    const apag=D.pagos.filter(p=>inEsp(p)&&['pendiente','vencido'].includes(pagoSt(p)));
+    body=head('Informe de seguimiento')+`<div class="kp">${[['Abiertos',op.length],['En curso',op.filter(t=>t.estado==='En curso').length],['En espera',op.filter(t=>t.estado==='En espera').length],['Bloqueados',op.filter(t=>t.estado==='Bloqueado').length],['Vencidos',op.filter(vencido).length],['Pagos pendientes',apag.length]].map(([l,v])=>`<div><b>${v}</b><span>${l}</span></div>`).join('')}</div>`;
+    const groups=[];(ESP?[G.esp(ESP)]:espsSorted()).forEach(e=>{D.proyectos.filter(p=>p.espacio_id===e.id).forEach(p=>groups.push([e.nombre+' · '+p.nombre,base.filter(t=>t.proyecto_id===p.id)]));groups.push([e.nombre+' · sin proyecto',base.filter(t=>t.espacio_id===e.id&&!t.proyecto_id)])});
+    groups.filter(g=>g[1].length).forEach(([n,L])=>{body+=`<h2>${esc(n)} (${L.length})</h2>`+(RS.b?ord(L).map(t=>topicBlock(t,false)).join(''):topicTable(ord(L)))});
+    if(apag.length)body+=`<h2>Pagos pendientes</h2><table><tr><th>Vence</th><th>Concepto</th><th>Categoría</th><th class="r">Monto</th></tr>${apag.sort((a,b)=>(a.vencimiento||'')<(b.vencimiento||'')?-1:1).map(p=>`<tr><td>${fd(p.vencimiento)}${pagoSt(p)==='vencido'?' ⚠':''}</td><td>${esc(p.concepto)}</td><td>${esc(p.categoria)}</td><td class="r">${money(p.monto,p.moneda)}</td></tr>`).join('')}</table>`;
+    name='Informe_'+slug(scope);
+  }else if(RS.k==='proyecto'){
+    const p=G.proj(RS.p);if(!p)return{html:`<style>${RCSS}</style><p class="mu">No hay proyectos en este espacio.</p>`,name:'informe.html'};
+    const all=D.temas.filter(t=>t.proyecto_id===p.id),L=all.filter(t=>RS.c||isOpen(t));
+    body=head('Proyecto: '+p.nombre,espName(p.espacio_id)+' · '+p.estado)+(p.descripcion?`<p class="pre">${esc(p.descripcion)}</p>`:'')+`<div class="kp"><div><b>${all.length}</b><span>Temas</span></div><div><b>${all.filter(t=>t.estado==='Cerrado').length}</b><span>Cerrados</span></div>${p.objetivo?`<div><b>${fd(p.objetivo)}</b><span>Objetivo</span></div>`:''}</div><h2>Resumen</h2>${topicTable(ord(L))}<h2>Detalle</h2>${ord(L).map(t=>topicBlock(t,RS.b)).join('')}`;
+    name='Proyecto_'+slug(p.nombre);
+  }else if(RS.k==='tema'){
+    const t=G.tema(RS.p);if(!t)return{html:`<style>${RCSS}</style><p class="mu">No hay temas.</p>`,name:'informe.html'};
+    body=head('Tema: '+t.titulo,espName(t.espacio_id))+topicBlock(t,true);name='Tema_'+slug(t.titulo);
+  }else if(RS.k==='novedades'){
+    const L=D.temas.filter(inEsp).map(t=>({t,e:logsOf(t.id).filter(b=>b.fecha.slice(0,10)>=RS.since&&(RS.sys||b.tipo==='usr'))})).filter(x=>x.e.length);
+    body=head('Novedades desde el '+fd(RS.since))+(L.length?L.map(({t,e})=>`<div class="box"><h3>${esc(t.titulo)} · ${st(t.estado)}</h3><div class="meta">${esc(espName(t.espacio_id))}${t.proyecto_id?' · '+esc(projName(t.proyecto_id)):''}</div><table class="lg">${[...e].reverse().map(b=>`<tr><td class="d">${fd(b.fecha)}</td><td class="pre">${esc(b.texto)}</td></tr>`).join('')}</table></div>`).join(''):'<p class="mu">Sin novedades en el período.</p>');
+    name='Novedades_'+RS.since;
+  }else{
+    const L=D.pagos.filter(p=>inEsp(p)&&p.estado!=='Cancelado'&&((p.estado==='Pagado'?(p.fecha_pago||p.vencimiento):p.vencimiento)||'').startsWith(RS.mes)).sort((a,b)=>(a.vencimiento||'')<(b.vencimiento||'')?-1:1);
+    const tot=(arr)=>{const t={};arr.forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto||0));return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'};
+    const pg=L.filter(p=>p.estado==='Pagado'),pe=L.filter(p=>p.estado!=='Pagado');
+    const [y,m]=RS.mes.split('-');
+    body=head('Pagos · '+MESL[+m-1]+' '+y)+`<div class="kp"><div><b>${tot(pg)}</b><span>Pagado (${pg.length})</span></div><div><b>${tot(pe)}</b><span>Pendiente (${pe.length})</span></div></div><h2>Detalle</h2><table><tr><th>Vence</th><th>Concepto</th><th>Categoría</th><th>Estado</th><th>Pagado el</th><th>Medio</th><th class="r">Monto</th></tr>${L.map(p=>`<tr><td>${fd(p.vencimiento)}</td><td>${esc(p.concepto)}</td><td>${esc(p.categoria)}</td><td>${p.estado==='Pagado'?'Pagado':pagoSt(p)==='vencido'?'Vencido':'A pagar'}</td><td>${fd(p.fecha_pago)}</td><td>${esc(p.medio)}</td><td class="r">${money(p.monto,p.moneda)}</td></tr>`).join('')}</table>`;
+    name='Pagos_'+RS.mes;
+  }
+  return{html:`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>${esc(name)}</title><style>${RCSS}</style></head><body>${body}</body></html>`,name:name+'_'+TODAY()+'.html'};
+}
+
+/* ---------- Ajustes ---------- */
+V.ajustes=()=>{
+  const e=espsSorted();
+  return `<div class="grid2"><div><div class="sec" style="margin-top:0"><h2>Espacios <span class="r"><button class="btn sm pri" onclick="editEsp()">+ Espacio</button></span></h2><div class="list">${e.map(x=>{const n=D.temas.filter(t=>t.espacio_id===x.id).length+D.pagos.filter(p=>p.espacio_id===x.id).length;return `<div class="li" onclick="editEsp('${x.id}')"><span class="dot" style="background:${x.color};width:12px;height:12px"></span><div class="t"><b>${esc(x.nombre)}</b><span>${D.proyectos.filter(p=>p.espacio_id===x.id).length} proyectos · ${n} registros</span></div><span class="mu2">Editar</span></div>`}).join('')||'<div class="li mu">Sin espacios</div>'}</div></div>
+   <div class="sec"><h2>Respaldo</h2><div class="pc"><div class="mu" style="font-size:13px;line-height:1.5;margin-bottom:10px">Los datos ya viven en tu base de Supabase. Igual conviene bajar un respaldo cada tanto: es un archivo con todos los registros (los archivos adjuntos se descargan desde Documentos).</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportJSON()">⤓ Respaldo completo (JSON)</button><button class="btn" onclick="exportTemasCSV()">⤓ Temas CSV</button><button class="btn" onclick="exportPagosCSV(D.pagos)">⤓ Pagos CSV</button></div></div></div></div>
+   <div><div class="sec" style="margin-top:0"><h2>Cuenta</h2><div class="pc"><div class="mu" style="font-size:13px">Sesión iniciada como</div><div style="font-weight:600;margin:3px 0 12px">${esc(USER.email)}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="chgPass()">Cambiar contraseña</button><button class="btn" onclick="reloadAll()">↻ Recargar datos</button><button class="btn danger" onclick="logout()">Cerrar sesión</button></div></div></div>
+   <div class="sec"><h2>En el celular</h2><div class="pc mu" style="font-size:13px;line-height:1.6"><b style="color:var(--tx)">Android (Chrome):</b> menú ⋮ → <i>Agregar a la pantalla principal</i> / <i>Instalar app</i>.<br><b style="color:var(--tx)">iPhone (Safari):</b> botón compartir → <i>Agregar a inicio</i>.<br>Queda como una app, con tu sesión iniciada.</div></div></div></div>`;
+};
+function editEsp(id){const e=id?G.esp(id):null;window._ec=e?e.color:ECOLORS[D.espacios.length%ECOLORS.length];
+  modal(`<h3>${e?'Editar espacio':'Nuevo espacio'}</h3><div class="f"><label>Nombre</label><input id="en" value="${esc(e?e.nombre:'')}" onkeydown="if(event.key==='Enter')saveEsp('${id||''}')"></div><div class="f"><label>Color</label><div id="ecs" style="display:flex;gap:8px;flex-wrap:wrap">${ECOLORS.map(c=>`<span onclick="window._ec='${c}';document.querySelectorAll('#ecs span').forEach(s=>s.style.outline='');this.style.outline='2px solid #fff'" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;outline-offset:2px;${c===window._ec?'outline:2px solid #fff':''}"></span>`).join('')}</div></div><div class="f"><label>Orden</label><input type="number" id="eo" value="${e?e.orden:D.espacios.length}"></div><div class="mf">${e?`<button class="btn danger" style="margin-right:auto" onclick="delEsp('${id}')">Eliminar</button>`:''}<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="saveEsp('${id||''}')">Guardar</button></div>`)}
+async function saveEsp(id){const n=$('#en').value.trim();if(!n){$('#en').focus();return}const row={nombre:n,color:window._ec,orden:+$('#eo').value||0};if(id)await upd('espacios',id,row);else await ins('espacios',row);closeModal();render()}
+function delEsp(id){const e=G.esp(id);const np=D.proyectos.filter(p=>p.espacio_id===id).length;confirmBox(`¿Eliminar el espacio <b>${esc(e.nombre)}</b>? Se borran sus ${np} proyecto(s); los temas, pagos y documentos quedan sin espacio (no se borran).`,'Eliminar',async()=>{closeModal();await del('espacios',id);await loadAll();if(ESP===id)ESP='';render()})}
+function chgPass(){modal(`<h3>Cambiar contraseña</h3><div class="f"><label>Nueva contraseña</label><input type="password" id="np1" autocomplete="new-password"></div><div class="f"><label>Repetir</label><input type="password" id="np2" autocomplete="new-password"></div><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="savePass()">Guardar</button></div>`)}
+async function savePass(){const a=$('#np1').value,b=$('#np2').value;if(a.length<8){toast('Mínimo 8 caracteres');return}if(a!==b){toast('No coinciden');return}const{error}=await sb.auth.updateUser({password:a});if(error){fail(error);return}closeModal();toast('Contraseña actualizada')}
+async function logout(){await sb.auth.signOut();location.reload()}
+async function reloadAll(){await loadAll();render();toast('Datos actualizados')}
+
+/* ---------- Exportaciones ---------- */
+function csv(rows){return '\ufeff'+rows.map(r=>r.map(c=>{c=String(c??'');return /[;"\n\r]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(';')).join('\r\n')}
+function exportTemasCSV(){const rows=[['Espacio','Proyecto','Tema','Estado','Prioridad','Contraparte','Alta','Objetivo','Última actualización','Pendientes abiertos','Último avance']];D.temas.filter(inEsp).forEach(t=>{const s=pendStat(t.id),lu=lastUser(t.id);rows.push([espName(t.espacio_id),projName(t.proyecto_id),t.titulo,t.estado,t.prioridad,t.contraparte,fd(t.alta),fd(t.objetivo),fdt(t.actualizado),s.open,lu?lu.texto:''])});download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Temas_'+TODAY()+'.csv')}
+function exportPagosCSV(L){const rows=[['Espacio','Concepto','Categoría','Vencimiento','Estado','Fecha de pago','Medio','Moneda','Monto','Recurrencia','Notas']];(L||[]).forEach(p=>rows.push([espName(p.espacio_id),p.concepto,p.categoria,fd(p.vencimiento),p.estado==='Pagado'?'Pagado':pagoSt(p)==='vencido'?'Vencido':p.estado,fd(p.fecha_pago),p.medio,p.moneda,String(p.monto).replace('.',','),RECS[p.recurrencia||''],p.notas]));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Pagos_'+TODAY()+'.csv')}
+function exportDocsCSV(){const rows=[['Documento','Categoría','Espacio','Tema','Pago','Nota','Fecha','Tamaño','Link']];D.documentos.filter(inEsp).forEach(d=>rows.push([d.nombre,d.categoria,espName(d.espacio_id),(G.tema(d.tema_id)||{}).titulo||'',(G.pago(d.pago_id)||{}).concepto||'',d.nota,fd(d.creado),d.size?fsize(d.size):'',d.url||'']));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Documentos_'+TODAY()+'.csv')}
+function exportJSON(){download(new Blob([JSON.stringify({app:'tablero-max',exportado:now(),datos:D},null,1)],{type:'application/json'}),'Respaldo_Tablero_'+TODAY()+'.json')}
+
+/* ===================== Altas ===================== */
+function quickAdd(){modal(`<h3>Nuevo</h3><div class="menu"><button class="btn full" onclick="closeModal();newTema()">${ICON.temas.replace('<svg','<svg width="16" height="16"')} Tema / asunto a seguir</button><button class="btn full" onclick="closeModal();newPago()">${ICON.pagos.replace('<svg','<svg width="16" height="16"')} Pago o vencimiento</button><button class="btn full" onclick="closeModal();newRec()">${ICON.agenda.replace('<svg','<svg width="16" height="16"')} Recordatorio</button><button class="btn full" onclick="closeModal();newDoc()">${ICON.docs.replace('<svg','<svg width="16" height="16"')} Documento</button><button class="btn full" onclick="closeModal();newProj(ESP)">${ICON.proyectos.replace('<svg','<svg width="16" height="16"')} Proyecto</button></div>`)}
+function newTema(projId='',espId=''){const p=projId?G.proj(projId):null;const e=p?p.espacio_id:(espId||ESP||(espsSorted()[0]||{}).id||'');
+  modal(`<h3>Nuevo tema</h3><div class="f"><label>Título</label><input id="nt" placeholder="Qué hay que seguir" onkeydown="if(event.key==='Enter')createTema()"></div>
+  <div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Espacio</label><select id="ne" onchange="$('#np').innerHTML=projOpts('',this.value)">${espOpts(e,false)}</select></div><div class="f"><label>Proyecto</label><select id="np">${projOpts(projId,e)}</select></div>
+  <div class="f"><label>Estado</label><select id="nes">${ESTADOS.filter(x=>x!=='Cerrado').map(x=>`<option ${x==='En curso'?'selected':''}>${x}</option>`).join('')}</select></div><div class="f"><label>Prioridad</label><select id="npr">${PRIOS.map(x=>`<option ${x==='Media'?'selected':''}>${x}</option>`).join('')}</select></div>
+  <div class="f"><label>Fecha objetivo</label><input type="date" id="no"></div><div class="f"><label>Contraparte</label><input id="nc" placeholder="opcional"></div></div>
+  <div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" id="nb" onclick="createTema()">Crear y abrir</button></div>`)}
+async function createTema(){const ti=$('#nt').value.trim();if(!ti){$('#nt').focus();return}$('#nb').disabled=true;
+  const t=await ins('temas',{titulo:ti,espacio_id:$('#ne').value||null,proyecto_id:$('#np').value||null,estado:$('#nes').value,prioridad:$('#npr').value,objetivo:$('#no').value||null,contraparte:$('#nc').value.trim()});
+  closeModal();if(t){await logT(t.id,'Tema creado');openDr('tema',t.id);render()}}
+function newProj(espId){modalProj(null,espId||ESP)}
+function editProj(id){modalProj(G.proj(id))}
+function modalProj(p,espId){modal(`<h3>${p?'Editar proyecto':'Nuevo proyecto'}</h3><div class="f"><label>Nombre</label><input id="pn" value="${esc(p?p.nombre:'')}"></div><div class="f"><label>Espacio</label><select id="pe">${espOpts(p?p.espacio_id:espId,false)}</select></div><div class="f"><label>Descripción / alcance</label><textarea id="pd" rows="3">${esc(p?p.descripcion:'')}</textarea></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Objetivo</label><input type="date" id="po" value="${p&&p.objetivo||''}"></div><div class="f"><label>Estado</label><select id="ps">${PEST.map(e=>`<option ${p&&p.estado===e?'selected':''}>${e}</option>`).join('')}</select></div></div><div class="mf">${p?`<button class="btn danger" style="margin-right:auto" onclick="delProj('${p.id}')">Eliminar</button>`:''}<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="saveProj('${p?p.id:''}')">Guardar</button></div>`)}
+async function saveProj(id){const n=$('#pn').value.trim();if(!n){$('#pn').focus();return}const row={nombre:n,espacio_id:$('#pe').value||null,descripcion:$('#pd').value.trim(),objetivo:$('#po').value||null,estado:$('#ps').value};if(id){await upd('proyectos',id,row);D.temas.filter(t=>t.proyecto_id===id&&t.espacio_id!==row.espacio_id).forEach(t=>upd('temas',t.id,{espacio_id:row.espacio_id}))}else await ins('proyectos',row);closeModal();render();toast('Proyecto guardado')}
+function delProj(id){const p=G.proj(id);confirmBox(`¿Eliminar el proyecto <b>${esc(p.nombre)}</b>? Sus temas quedan sin proyecto.`,'Eliminar',async()=>{closeModal();await del('proyectos',id);D.temas.forEach(t=>{if(t.proyecto_id===id)t.proyecto_id=null});render()})}
+function newPago(fecha){const e=ESP||(espsSorted().find(x=>norm(x.nombre)==='personal')||espsSorted()[0]||{}).id||'';
+  modal(`<h3>Nuevo pago / vencimiento</h3><div class="f"><label>Concepto</label><input id="pc" placeholder="Ej. Expensas noviembre"></div>
+  <div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Monto</label><input id="pm" inputmode="decimal" placeholder="0,00"></div><div class="f"><label>Moneda</label><select id="pmo">${MONEDAS.map(m=>`<option>${m}</option>`).join('')}</select></div>
+  <div class="f"><label>Vencimiento</label><input type="date" id="pv" value="${fecha||''}"></div><div class="f"><label>Categoría</label><select id="pca">${PCATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+  <div class="f"><label>Se repite</label><select id="pr">${Object.entries(RECS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="f"><label>Espacio</label><select id="pe">${espOpts(e,true)}</select></div></div>
+  <label class="ck2"><input type="checkbox" id="pya"> Ya está pagado</label>
+  <div class="f"><label>Comprobante / factura (opcional)</label><input type="file" id="pfile" multiple></div>
+  <div class="f"><label>Notas</label><input id="pn" placeholder="Nº de cliente, CBU del destinatario, etc."></div>
+  <div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" id="pb" onclick="createPago()">Guardar</button></div>`)}
+async function createPago(){const c=$('#pc').value.trim();if(!c){$('#pc').focus();return}$('#pb').disabled=true;const ya=$('#pya').checked;
+  const row={concepto:c,monto:parseMonto($('#pm').value),moneda:$('#pmo').value,vencimiento:$('#pv').value||null,categoria:$('#pca').value,recurrencia:$('#pr').value,espacio_id:$('#pe').value||null,notas:$('#pn').value.trim(),estado:ya?'Pagado':'A pagar',fecha_pago:ya?($('#pv').value||TODAY()):null};
+  const p=await ins('pagos',row);const fs=$('#pfile').files;if(p&&fs.length)await uploadFiles(fs,{pago_id:p.id,espacio_id:p.espacio_id,categoria:'Comprobante'});closeModal();render();toast('Pago guardado')}
+function newRec(fecha){modal(`<h3>Nuevo recordatorio</h3><div class="f"><label>Qué</label><input id="rt" placeholder="Ej. Llamar al banco"></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Fecha</label><input type="date" id="rf2" value="${fecha||TODAY()}"></div><div class="f"><label>Hora (opcional)</label><input type="time" id="rh"></div><div class="f"><label>Espacio</label><select id="re">${espOpts(ESP,true)}</select></div><div class="f"><label>Tema (opcional)</label><select id="rtm"><option value="">—</option>${D.temas.filter(t=>isOpen(t)&&inEsp(t)).map(t=>`<option value="${t.id}">${esc(t.titulo)}</option>`).join('')}</select></div></div><div class="f"><label>Notas</label><input id="rn"></div><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="createRec()">Guardar</button></div>`)}
+async function createRec(){const t=$('#rt').value.trim();if(!t){$('#rt').focus();return}const tid=$('#rtm').value||null;const tm=tid&&G.tema(tid);await ins('recordatorios',{titulo:t,fecha:$('#rf2').value||TODAY(),hora:$('#rh').value||null,espacio_id:tm?tm.espacio_id:($('#re').value||null),tema_id:tid,notas:$('#rn').value.trim()});closeModal();render();toast('Recordatorio guardado')}
+
+/* ===================== Calendario externo ===================== */
+function icsEsc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;')}
+function calDates(fecha,hora){if(hora){const s=fecha.replace(/-/g,'')+'T'+hora.slice(0,5).replace(':','')+'00';const d=new Date(fecha+'T'+hora.slice(0,5)+':00');d.setMinutes(d.getMinutes()+30);const e=localISO(d).replace(/-/g,'')+'T'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'00';return[s,e,false]}return[fecha.replace(/-/g,''),addDays(fecha,1).replace(/-/g,''),true]}
+function toICS(title,fecha,hora,desc){const[s,e,allDay]=calDates(fecha,hora);const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Tablero Max//ES','BEGIN:VEVENT','UID:'+uid()+'@tablero-max','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',allDay?'DTSTART;VALUE=DATE:'+s:'DTSTART:'+s,allDay?'DTEND;VALUE=DATE:'+e:'DTEND:'+e,'SUMMARY:'+icsEsc(title),'DESCRIPTION:'+icsEsc(desc),'BEGIN:VALARM','TRIGGER:'+(allDay?'-PT15H':'-PT30M'),'ACTION:DISPLAY','DESCRIPTION:'+icsEsc(title),'END:VALARM','END:VEVENT','END:VCALENDAR'];download(new Blob([L.join('\r\n')],{type:'text/calendar'}),slug(title)+'.ics')}
+function gcal(title,fecha,hora,desc){const[s,e]=calDates(fecha,hora);window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${s}/${e}&details=${encodeURIComponent(desc||'')}${hora?'&ctz=America/Argentina/Buenos_Aires':''}`,'_blank')}
+function calBtns(kind,id){return `<button class="btn sm" onclick="calOut('${kind}','${id}','g')">📅 Google Calendar</button><button class="btn sm" onclick="calOut('${kind}','${id}','i')">⤓ .ics (iPhone/Outlook)</button>`}
+function calOut(kind,id,how){let t,f,h=null,d='';if(kind==='pago'){const p=G.pago(id);if(!p.vencimiento){toast('Cargá el vencimiento primero');return}t='Vence: '+p.concepto;f=p.vencimiento;d=[money(p.monto,p.moneda),p.categoria,p.notas].filter(Boolean).join(' · ')}else if(kind==='rec'){const r=G.rec(id);t=r.titulo;f=r.fecha;h=r.hora;d=r.notas}else{const tm=G.tema(id);if(!tm.objetivo){toast('Cargá la fecha objetivo primero');return}t='Objetivo: '+tm.titulo;f=tm.objetivo;d=tm.descripcion}
+  how==='g'?gcal(t,f,h,d):toICS(t,f,h,d)}
+
+/* ===================== Drawer ===================== */
+function openDr(k,id){DR={k,id};renderDrawer();$('#drawer').classList.add('on')}
+function closeDr(){DR=null;$('#drawer').classList.remove('on')}
+function renderDrawer(){if(!DR)return;const dbEl=$('#drawer .db');const sc=dbEl?dbEl.scrollTop:0;
+  const h=DR.k==='tema'?drTema():DR.k==='pago'?drPago():drRec();if(h===null){closeDr();return}
+  $('#drawer').innerHTML=h;const nd=$('#drawer .db');if(nd)nd.scrollTop=sc;
+  const dz=$('#drop');if(dz){dz.ondragover=e=>{e.preventDefault();dz.classList.add('over')};dz.ondragleave=()=>dz.classList.remove('over');dz.ondrop=e=>{e.preventDefault();dz.classList.remove('over');attFiles(e.dataTransfer.files)}}}
+function attList(docs){return docs.map(a=>`<div class="att"><span class="k">${a.url?'link':esc(ext(a.nombre))}</span><div class="n"><div>${esc(a.nombre)}</div><input value="${esc(a.nota||'')}" placeholder="nota…" onchange="upd('documentos','${a.id}',{nota:this.value.trim()})" style="background:transparent;border:none;padding:0;font-size:12px;color:var(--mu);width:100%"></div><span class="mu2 num hm" style="font-size:11.5px">${a.url?'':fsize(a.size)}</span><button class="btn sm" onclick="dlDoc('${a.id}')">${a.url?'Abrir':'⤓'}</button><button class="btn ghost sm x" onclick="delDoc('${a.id}')">✕</button></div>`).join('')}
+async function attFiles(files){if(!DR||!files||!files.length)return;const cat=$('#acat')?$('#acat').value:'Documento';
+  if(DR.k==='tema'){const t=G.tema(DR.id);const n=await uploadFiles(files,{tema_id:t.id,espacio_id:t.espacio_id,categoria:cat});if(n)await touch(t.id,'Adjunto: '+[...files].map(f=>f.name).join(', '))}
+  else if(DR.k==='pago'){const p=G.pago(DR.id);await uploadFiles(files,{pago_id:p.id,espacio_id:p.espacio_id,tema_id:p.tema_id,categoria:cat})}
+  render()}
+const dropZone=()=>`<div class="drop" id="drop" onclick="$('#fin').click()">Arrastrá archivos o tocá para elegir<input type="file" id="fin" multiple hidden onchange="attFiles(this.files)"></div>`;
+
+function drTema(){const t=G.tema(DR.id);if(!t)return null;
+  const ps=pendsOf(t.id),pend=[...ps.filter(p=>!p.hecho),...ps.filter(p=>p.hecho)],logs=[...logsOf(t.id)].reverse(),docs=docsOf('tema_id',t.id),{tot,dn}=pendStat(t.id);
+  const pagos=D.pagos.filter(p=>p.tema_id===t.id),recs=D.recordatorios.filter(r=>r.tema_id===t.id);
+  return `<div class="dh"><input class="ttl" value="${esc(t.titulo)}" onchange="tUpd('titulo',this.value.trim()||'Sin título')">${pill(t.estado)}<button class="btn ghost" onclick="closeDr()">✕</button></div>
+  <div class="db"><div class="fg">
+   <div class="f"><label>Estado</label><select onchange="setEstado('${t.id}',this.value)">${ESTADOS.map(e=>`<option ${e===t.estado?'selected':''}>${e}</option>`).join('')}</select></div>
+   <div class="f"><label>Prioridad</label><select onchange="tUpd('prioridad',this.value,'Prioridad')">${PRIOS.map(p=>`<option ${p===t.prioridad?'selected':''}>${p}</option>`).join('')}</select></div>
+   <div class="f"><label>Espacio</label><select onchange="tUpd('espacio_id',this.value||null,'Espacio')">${espOpts(t.espacio_id,true)}</select></div>
+   <div class="f"><label>Proyecto</label><select onchange="tProj(this.value)">${projOpts(t.proyecto_id,t.espacio_id)}<option value="__new">+ Nuevo proyecto…</option></select></div>
+   <div class="f"><label>Contraparte</label><input value="${esc(t.contraparte)}" placeholder="Banco, estudio, proveedor…" onchange="tUpd('contraparte',this.value.trim(),'Contraparte')"></div>
+   <div class="f"><label>Fecha objetivo</label><input type="date" value="${t.objetivo||''}" onchange="tUpd('objetivo',this.value||null,'Fecha objetivo')" style="${vencido(t)?'border-color:var(--er)':''}"></div>
+   <div class="f"><label>Alta</label><input type="date" value="${t.alta||''}" onchange="tUpd('alta',this.value||null)"></div>
+   <div class="f" style="grid-column:span 2"><label>Etiquetas</label><input value="${esc((t.tags||[]).join(', '))}" placeholder="separadas por coma" onchange="tUpd('tags',this.value.split(',').map(s=>s.trim()).filter(Boolean))"></div>
+  </div>
+  <div class="ds"><h3>Descripción / contexto</h3><textarea rows="4" placeholder="De qué se trata, alcance, criterio…" onchange="tUpd('descripcion',this.value)">${esc(t.descripcion)}</textarea></div>
+  <div class="ds"><h3>Qué falta <span class="r mu">${tot?`${dn}/${tot} resueltos`:''}</span></h3>
+   ${pend.map(p=>`<div class="chk ${p.hecho?'done':''}"><input type="checkbox" ${p.hecho?'checked':''} onchange="togPend('${p.id}')"><span contenteditable="true" spellcheck="false" onblur="editPend('${p.id}',this.innerText)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${esc(p.texto)}</span>${p.hecho&&p.cierre?`<span class="mu2" style="font-size:11px">${fd(p.cierre)}</span>`:''}<button class="btn ghost sm x" onclick="delPend('${p.id}')">✕</button></div>`).join('')}
+   <div style="display:flex;gap:8px;margin-top:6px"><input id="pin" style="flex:1" placeholder="Agregar pendiente" onkeydown="if(event.key==='Enter')addPend()"><button class="btn sm" onclick="addPend()">Agregar</button></div></div>
+  <div class="ds"><h3>Bitácora de avances</h3>
+   <textarea id="bin" rows="2" placeholder="Qué pasó, qué se definió, próximo paso…" onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey))addLog()"></textarea>
+   <div style="display:flex;gap:8px;margin:6px 0 14px;align-items:center"><input type="date" id="bdate" value="${TODAY()}"><div class="sp"></div><button class="btn pri sm" onclick="addLog()">Registrar avance</button></div>
+   ${logs.map(b=>`<div class="log ${b.tipo==='usr'?'usr':'sys'}"><div class="d">${fdt(b.fecha)}${b.tipo==='usr'?'':' · automático'}<button class="btn ghost sm x" style="padding:0 6px" onclick="delLog('${b.id}')">✕</button></div><div class="tx">${esc(b.texto)}</div></div>`).join('')||'<div class="mu2">Sin movimientos.</div>'}</div>
+  <div class="ds"><h3>Documentación <span class="r"><select id="acat" style="padding:4px 6px;font-size:12px">${CATS.map(c=>`<option>${c}</option>`).join('')}</select><button class="btn sm" onclick="newLink({tema_id:'${t.id}',espacio_id:${t.espacio_id?`'${t.espacio_id}'`:'null'}})">+ Link</button></span></h3>${dropZone()}${attList(docs)}</div>
+  <div class="ds"><h3>Pagos y recordatorios vinculados <span class="r"><button class="btn sm" onclick="newRecFor('${t.id}')">+ Recordatorio</button></span></h3>${[...pagos.map(p=>`<div class="att" style="cursor:pointer" onclick="openDr('pago','${p.id}')"><span class="k">pago</span><div class="n"><div>${esc(p.concepto)}</div></div><span class="amt">${money(p.monto,p.moneda)}</span>${ppill(p)}</div>`),...recs.map(r=>`<div class="att" style="cursor:pointer" onclick="openDr('rec','${r.id}')"><span class="k">rec</span><div class="n"><div>${esc(r.titulo)}</div></div><span class="mu num">${fd(r.fecha)}</span>${r.hecho?'<span class="okc">✓</span>':''}</div>`)].join('')||'<div class="mu2">—</div>'}</div>
+  <div class="mu2" style="font-size:11.5px;margin-top:22px">Creado ${fdt(t.creado)} · actualizado ${fdt(t.actualizado)}</div></div>
+  <div class="df">${t.objetivo?calBtns('tema',t.id):''}<button class="btn" onclick="RS.k='tema';RS.p='${t.id}';closeDr();go('informes')">Informe</button><div class="sp"></div><button class="btn danger" onclick="delTema('${t.id}')">Eliminar</button></div>`}
+async function tUpd(k,v,lbl){const t=G.tema(DR.id);const old=t[k];if(JSON.stringify(old)===JSON.stringify(v))return;await upd('temas',t.id,{[k]:v,actualizado:now()});
+  if(lbl){const f=x=>k==='espacio_id'?(espName(x)||'—'):k==='objetivo'?fd(x):(x||'—');await logT(t.id,`${lbl}: ${f(old)} → ${f(v)}`)}render()}
+function tProj(v){const t=G.tema(DR.id);if(v==='__new'){modalProj(null,t.espacio_id);window._afterProj=true;return}upd('temas',t.id,{proyecto_id:v||null,actualizado:now()}).then(()=>{logT(t.id,'Proyecto: '+(projName(v)||'sin proyecto'));render()})}
+async function addPend(){const v=$('#pin').value.trim();if(!v)return;const id=DR.id;$('#pin').value='';await ins('pendientes',{tema_id:id,texto:v});await touch(id,'Pendiente agregado: '+v);render();$('#pin')&&$('#pin').focus()}
+async function togPend(pid){const p=D.pendientes.find(x=>x.id===pid);const h=!p.hecho;await upd('pendientes',pid,{hecho:h,cierre:h?now():null});await touch(p.tema_id,(h?'Pendiente resuelto: ':'Pendiente reabierto: ')+p.texto);render()}
+async function editPend(pid,v){const p=D.pendientes.find(x=>x.id===pid);v=v.trim();if(!v||v===p.texto)return;await upd('pendientes',pid,{texto:v})}
+async function delPend(pid){await del('pendientes',pid);render()}
+async function addLog(){const v=$('#bin').value.trim();if(!v)return;const id=DR.id;const fe=$('#bdate').value;const fecha=fe&&fe!==TODAY()?new Date(fe+'T12:00:00').toISOString():now();await ins('bitacora',{tema_id:id,texto:v,tipo:'usr',fecha});await upd('temas',id,{actualizado:now()});render();toast('Avance registrado')}
+async function delLog(bid){await del('bitacora',bid);render()}
+function delTema(id){const t=G.tema(id);const docs=docsOf('tema_id',id);confirmBox(`¿Eliminar <b>${esc(t.titulo)}</b> con sus pendientes, bitácora y ${docs.length} documento(s)?`,'Eliminar',async()=>{const paths=docs.filter(d=>d.path).map(d=>d.path);if(paths.length)await sb.storage.from('docs').remove(paths);await del('temas',id);['pendientes','bitacora','documentos'].forEach(k=>D[k]=D[k].filter(x=>x.tema_id!==id));closeDr();render();toast('Tema eliminado')})}
+function newRecFor(tid){newRec();setTimeout(()=>{$('#rtm').value=tid},0)}
+
+function drPago(){const p=G.pago(DR.id);if(!p)return null;const st=pagoSt(p),docs=docsOf('pago_id',p.id);
+  return `<div class="dh"><input class="ttl" value="${esc(p.concepto)}" onchange="pUpd('concepto',this.value.trim()||'Sin concepto')">${ppill(p)}<button class="btn ghost" onclick="closeDr()">✕</button></div>
+  <div class="db"><div class="fg">
+   <div class="f"><label>Monto</label><input inputmode="decimal" value="${NF.format(+p.monto||0)}" onchange="pUpd('monto',parseMonto(this.value))"></div>
+   <div class="f"><label>Moneda</label><select onchange="pUpd('moneda',this.value)">${MONEDAS.map(m=>`<option ${m===p.moneda?'selected':''}>${m}</option>`).join('')}</select></div>
+   <div class="f"><label>Vencimiento</label><input type="date" value="${p.vencimiento||''}" onchange="pUpd('vencimiento',this.value||null)"></div>
+   <div class="f"><label>Estado</label><select onchange="pEstado(this.value)">${['A pagar','Pagado','Cancelado'].map(e=>`<option ${e===p.estado?'selected':''}>${e}</option>`).join('')}</select></div>
+   <div class="f"><label>Fecha de pago</label><input type="date" value="${p.fecha_pago||''}" onchange="pUpd('fecha_pago',this.value||null)"></div>
+   <div class="f"><label>Medio</label><select onchange="pUpd('medio',this.value)"><option value="">—</option>${MEDIOS.map(m=>`<option ${m===p.medio?'selected':''}>${m}</option>`).join('')}</select></div>
+   <div class="f"><label>Categoría</label><select onchange="pUpd('categoria',this.value)">${PCATS.map(c=>`<option ${c===p.categoria?'selected':''}>${c}</option>`).join('')}</select></div>
+   <div class="f"><label>Se repite</label><select onchange="pUpd('recurrencia',this.value)">${Object.entries(RECS).map(([k,l])=>`<option value="${k}" ${k===(p.recurrencia||'')?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div class="f"><label>Espacio</label><select onchange="pUpd('espacio_id',this.value||null)">${espOpts(p.espacio_id,true)}</select></div>
+   <div class="f" style="grid-column:1/-1"><label>Vinculado al tema</label><select onchange="pUpd('tema_id',this.value||null)"><option value="">—</option>${D.temas.filter(t=>!p.espacio_id||t.espacio_id===p.espacio_id).map(t=>`<option value="${t.id}" ${t.id===p.tema_id?'selected':''}>${esc(t.titulo)}</option>`).join('')}</select></div>
+  </div>
+  <div class="ds"><h3>Notas</h3><textarea rows="3" placeholder="Nº de cliente, CBU, referencia, etc." onchange="pUpd('notas',this.value)">${esc(p.notas)}</textarea></div>
+  <div class="ds"><h3>Comprobantes y facturas <span class="r"><select id="acat" style="padding:4px 6px;font-size:12px">${['Comprobante','Factura','Documento','Otro'].map(c=>`<option>${c}</option>`).join('')}</select><button class="btn sm" onclick="newLink({pago_id:'${p.id}',espacio_id:${p.espacio_id?`'${p.espacio_id}'`:'null'}})">+ Link</button></span></h3>${dropZone()}${attList(docs)}</div>
+  <div class="mu2" style="font-size:11.5px;margin-top:22px">Cargado ${fdt(p.creado)}</div></div>
+  <div class="df">${st==='pendiente'||st==='vencido'?`<button class="btn ok" onclick="payNow('${p.id}')">✓ Registrar pago</button>`:''}${p.vencimiento?calBtns('pago',p.id):''}<button class="btn" onclick="dupPago('${p.id}')">Duplicar</button><div class="sp"></div><button class="btn danger" onclick="delPago('${p.id}')">Eliminar</button></div>`}
+async function pUpd(k,v){await upd('pagos',DR.id,{[k]:v});render()}
+function pEstado(v){if(v==='Pagado'){render();payNow(DR.id);return}pUpd('estado',v);if(v!=='Pagado')upd('pagos',DR.id,{fecha_pago:null})}
+async function dupPago(id){const p=G.pago(id);const n=await ins('pagos',{concepto:p.concepto,categoria:p.categoria,monto:p.monto,moneda:p.moneda,vencimiento:p.vencimiento?addMonths(p.vencimiento,1):null,espacio_id:p.espacio_id,tema_id:p.tema_id,recurrencia:p.recurrencia,medio:p.medio,notas:p.notas,estado:'A pagar'});if(n){openDr('pago',n.id);render();toast('Duplicado para el mes siguiente')}}
+function delPago(id){const p=G.pago(id);const docs=docsOf('pago_id',id);confirmBox(`¿Eliminar el pago <b>${esc(p.concepto)}</b>${docs.length?` y sus ${docs.length} comprobante(s)`:''}?`,'Eliminar',async()=>{const paths=docs.filter(d=>d.path).map(d=>d.path);if(paths.length)await sb.storage.from('docs').remove(paths);await del('pagos',id);D.documentos=D.documentos.filter(d=>d.pago_id!==id);closeDr();render()})}
+
+function drRec(){const r=G.rec(DR.id);if(!r)return null;
+  return `<div class="dh"><input class="ttl" value="${esc(r.titulo)}" onchange="rUpd('titulo',this.value.trim()||'Recordatorio')"><button class="btn ghost" onclick="closeDr()">✕</button></div>
+  <div class="db"><div class="fg"><div class="f"><label>Fecha</label><input type="date" value="${r.fecha}" onchange="rUpd('fecha',this.value||TODAY())"></div><div class="f"><label>Hora</label><input type="time" value="${r.hora?r.hora.slice(0,5):''}" onchange="rUpd('hora',this.value||null)"></div><div class="f"><label>Espacio</label><select onchange="rUpd('espacio_id',this.value||null)">${espOpts(r.espacio_id,true)}</select></div>
+  <div class="f" style="grid-column:1/-1"><label>Tema</label><select onchange="rUpd('tema_id',this.value||null)"><option value="">—</option>${D.temas.map(t=>`<option value="${t.id}" ${t.id===r.tema_id?'selected':''}>${esc(t.titulo)}</option>`).join('')}</select></div></div>
+  <div class="ds"><h3>Notas</h3><textarea rows="4" onchange="rUpd('notas',this.value)">${esc(r.notas)}</textarea></div>
+  <label class="ck2" style="margin-top:16px"><input type="checkbox" ${r.hecho?'checked':''} onchange="recDone('${r.id}')"> Hecho</label></div>
+  <div class="df">${calBtns('rec',r.id)}<div class="sp"></div><button class="btn danger" onclick="confirmBox('¿Eliminar el recordatorio?','Eliminar',async()=>{await del('recordatorios','${r.id}');closeDr();render()})">Eliminar</button></div>`}
+async function rUpd(k,v){await upd('recordatorios',DR.id,{[k]:v});render()}
+
+/* ===================== Modales ===================== */
+function modal(html){const m=$('#modal');m.innerHTML=`<div class="mb" onmousedown="if(event.target===this)closeModal()"><div class="mc">${html}</div></div>`;m.style.display='block';const f=m.querySelector('input:not([type=file]):not([type=checkbox]),textarea');if(f&&window.innerWidth>860)f.focus()}
+function closeModal(){const m=$('#modal');if(m.style.display!=='block')return false;m.style.display='none';m.innerHTML='';return true}
+function confirmBox(msg,ok,fn){window._cf=fn;modal(`<h3>Confirmar</h3><p style="line-height:1.5">${msg}</p><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="closeModal();_cf()">${ok}</button></div>`)}
+
+/* ===================== Login ===================== */
+function showLogin(){$('#app').classList.add('hide');$('#login').classList.remove('hide')}
+async function doLogin(){const e=$('#le').value.trim(),p=$('#lp').value;$('#lerr').textContent='';if(!e||!p){$('#lerr').textContent='Completá mail y contraseña';return}
+  const{data,error}=await sb.auth.signInWithPassword({email:e,password:p});if(error){$('#lerr').textContent=error.message==='Invalid login credentials'?'Mail o contraseña incorrectos':error.message;return}start(data.user)}
+async function doSignup(){const e=$('#le').value.trim(),p=$('#lp').value;$('#lerr').textContent='';if(!e||p.length<8){$('#lerr').textContent='Ingresá mail y una contraseña de al menos 8 caracteres';return}
+  const{data,error}=await sb.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin+location.pathname}});if(error){$('#lerr').textContent=/disabled|not allowed/i.test(error.message)?'El registro de usuarios nuevos está cerrado.':error.message;return}
+  if(data.session)start(data.user);else $('#lerr').innerHTML='<span class="okc">Usuario creado. Revisá tu mail para confirmarlo y después ingresá.</span>'}
+async function doReset(){const e=$('#le').value.trim();if(!e){$('#lerr').textContent='Escribí tu mail arriba';return}const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});$('#lerr').innerHTML=error?esc(error.message):'<span class="okc">Te enviamos un mail para restablecer la contraseña.</span>'}
+async function start(u){USER=u;$('#login').classList.add('hide');$('#app').classList.remove('hide');$('#main').innerHTML='<div class="empty">Cargando…</div>';await loadAll();
+  if(!D.espacios.length){await insMany('espacios',[{nombre:'Ceta',color:'#4c8dff',orden:0},{nombre:'EFM',color:'#b07cff',orden:1},{nombre:'Personal',color:'#2fb67c',orden:2}])}
+  if(ESP&&!G.esp(ESP))ESP='';render()}
+
+/* ===================== Eventos ===================== */
+$('#q').addEventListener('input',e=>{Q=e.target.value;if(['inicio','agenda','proyectos','informes','ajustes'].includes(VIEW)&&Q.trim())VIEW='temas';render()});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(closeModal())return;if(DR){closeDr();return}}
+  const tg=e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT'||e.target.isContentEditable||e.ctrlKey||e.metaKey||e.altKey||!USER)return;
+  if(e.key==='/'){e.preventDefault();$('#q').focus()}else if(e.key==='n'||e.key==='N'){e.preventDefault();quickAdd()}});
+window.addEventListener('dragover',e=>{if(!e.target.closest||!e.target.closest('#drop,.col'))e.preventDefault()});
+window.addEventListener('drop',e=>{if(!e.target.closest||!e.target.closest('#drop,.col'))e.preventDefault()});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&USER&&Date.now()-lastLoad>60000&&!$('#modal').innerHTML){await loadAll();render()}});
+const _saveProj=saveProj;saveProj=async function(id){const before=D.proyectos.length;await _saveProj(id);if(window._afterProj&&DR&&DR.k==='tema'&&D.proyectos.length>before){window._afterProj=false;const np=D.proyectos[D.proyectos.length-1];await upd('temas',DR.id,{proyecto_id:np.id,espacio_id:np.espacio_id,actualizado:now()});render()}};
+
+sb.auth.onAuthStateChange((ev,session)=>{if(ev==='PASSWORD_RECOVERY'){if(session)start(session.user).then(()=>chgPass())}if(ev==='SIGNED_OUT'){USER=null;showLogin()}});
+(async()=>{const{data:{session}}=await sb.auth.getSession();if(session&&session.user)start(session.user);else showLogin()})();
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
