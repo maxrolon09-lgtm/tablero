@@ -482,7 +482,7 @@ V.inicio=()=>{
   const venc=apag.filter(p=>pagoSt(p)==='vencido');
   const p30=apag.filter(p=>p.vencimiento&&daysTo(p.vencimiento)<=30);
   const tot={};p30.forEach(p=>tot[p.moneda]=(tot[p.moneda]||0)+(+p.monto||0));
-  const totS=Object.keys(tot).map(k=>money(tot[k],k)).join(' + ')||'—';
+  const nz=p30.filter(p=>!(+p.monto)).length;const totS=(Object.keys(tot).filter(k=>tot[k]).map(k=>money(tot[k],k)).join(' + ')||'—')+(nz?` · ${nz} a confirmar`:'');
   const att=op.filter(t=>vencido(t)||t.estado==='Bloqueado'||stale(t));
   const recH=D.recordatorios.filter(r=>inEsp(r)&&!r.hecho&&r.fecha<=TODAY()).length;
   const k=`<div class="kpis">
@@ -575,7 +575,7 @@ V.pagos=()=>{
   if(PF.vista==='apagar'){L=L.filter(p=>['pendiente','vencido'].includes(pagoSt(p))).sort((a,b)=>(a.vencimiento||'9999')<(b.vencimiento||'9999')?-1:1);title='Pendientes de pago'}
   else if(PF.vista==='pagados'){L=L.filter(p=>pagoSt(p)==='pagado').sort((a,b)=>(a.fecha_pago||'')<(b.fecha_pago||'')?1:-1);title='Pagados'}
   else {L=L.filter(p=>(p.estado==='Pagado'?(p.fecha_pago||p.vencimiento||''):(p.vencimiento||'')).startsWith(PF.mes)).sort((a,b)=>(a.vencimiento||'')<(b.vencimiento||'')?-1:1);title='Mes '+PF.mes}
-  const tot=(arr)=>{const t={};arr.forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto||0));return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'};
+  const tot=(arr)=>{const t={};arr.filter(p=>+p.monto).forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto));const nz=arr.filter(p=>!(+p.monto)).length;return (Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—')+(nz?` · ${nz} a confirmar`:'')};
   const allE=D.pagos.filter(inEsp);
   const venc=allE.filter(p=>pagoSt(p)==='vencido'),p30=allE.filter(p=>pagoSt(p)==='pendiente'&&p.vencimiento&&daysTo(p.vencimiento)<=30);
   const mesAct=TODAY().slice(0,7),pagMes=allE.filter(p=>p.estado==='Pagado'&&(p.fecha_pago||'').startsWith(mesAct));
@@ -610,7 +610,7 @@ let CF={anio:TODAY().slice(0,4)};
 const cuentaName=id=>(G.cuenta(id)||{}).nombre||'';
 const pagosDe=id=>D.pagos.filter(p=>p.cuenta_id===id);
 const pFecha=p=>p.estado==='Pagado'?(p.fecha_pago||p.vencimiento||''):(p.vencimiento||'');
-function totStr(arr){const t={};arr.forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto||0));return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'}
+function totStr(arr){const t={};arr.filter(p=>+p.monto).forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto));return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'}
 async function copyTxt(t){try{await navigator.clipboard.writeText(t);toast('Copiado: '+t)}catch(e){toast(t)}}
 function copyCampo(cid,k){const c=G.cuenta(cid);if(c&&c[k])copyTxt(c[k])}
 function cuentaPayInfo(cid){const c=G.cuenta(cid);if(!c)return '';const it=[['alias','Alias'],['cbu','CBU/CVU'],['nro_cliente','N° cliente'],['cuit','CUIT']].filter(([k])=>c[k]);if(!it.length)return '';
@@ -797,7 +797,7 @@ function buildReport(){
     name='Estado_de_cuenta_'+slug(c.nombre)+'_'+RS.anio;
   }else{
     const L=D.pagos.filter(p=>inEsp(p)&&p.estado!=='Cancelado'&&((p.estado==='Pagado'?(p.fecha_pago||p.vencimiento):p.vencimiento)||'').startsWith(RS.mes)).sort((a,b)=>(a.vencimiento||'')<(b.vencimiento||'')?-1:1);
-    const tot=(arr)=>{const t={};arr.forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto||0));return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'};
+    const tot=(arr)=>{const t={};arr.filter(p=>+p.monto).forEach(p=>t[p.moneda]=(t[p.moneda]||0)+(+p.monto));const nz=arr.filter(p=>!(+p.monto)).length;return (Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—')+(nz?` · ${nz} a confirmar`:'')};
     const pg=L.filter(p=>p.estado==='Pagado'),pe=L.filter(p=>p.estado!=='Pagado');
     const [y,m]=RS.mes.split('-');
     body=head('Pagos · '+MESL[+m-1]+' '+y)+`<div class="kp"><div><b>${tot(pg)}</b><span>Pagado (${pg.length})</span></div><div><b>${tot(pe)}</b><span>Pendiente (${pe.length})</span></div></div><h2>Detalle</h2><table><tr><th>Vence</th><th>Concepto</th><th>Categoría</th><th>Estado</th><th>Pagado el</th><th>Medio</th><th class="r">Monto</th></tr>${L.map(p=>`<tr><td>${fd(p.vencimiento)}</td><td>${esc(p.concepto)}</td><td>${esc(p.categoria)}</td><td>${p.estado==='Pagado'?'Pagado':pagoSt(p)==='vencido'?'Vencido':'A pagar'}</td><td>${fd(p.fecha_pago)}</td><td>${esc(p.medio)}</td><td class="r">${money(p.monto,p.moneda)}</td></tr>`).join('')}</table>`;
