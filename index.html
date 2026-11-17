@@ -41,6 +41,7 @@ textarea{resize:vertical;width:100%;line-height:1.45}
 .lc{width:min(360px,100%);background:var(--p1);border:1px solid var(--bd);border-radius:12px;padding:26px;display:flex;flex-direction:column;gap:10px}
 .lc .lm{font-size:12.5px;color:var(--mu);text-align:center;margin-top:4px}
 .brand{font-weight:650;font-size:16px;letter-spacing:.2px}
+.brand{display:flex;align-items:center;gap:11px}.brand .logo{height:24px;width:auto;flex:none}.tlogo{height:18px;width:auto}
 .brand small{display:block;color:var(--mu);font-weight:550;font-size:11px;margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
 /* Layout */
 #side{position:fixed;left:0;top:0;bottom:0;width:224px;background:var(--p1);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:16px 12px;z-index:6}
@@ -218,7 +219,7 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
 
 <div id="login" class="login hide">
   <div class="lc">
-    <div class="brand">Tablero<small>Max Rolón</small></div>
+    <div class="brand"><img src="logo.png" alt="MR" class="logo"><div>Tablero<small>Max Rolón</small></div></div>
     <div style="height:6px"></div>
     <input id="le" type="email" placeholder="Mail" autocomplete="username">
     <input id="lp" type="password" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
@@ -230,7 +231,7 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
 
 <div id="app" class="hide">
 <aside id="side">
-  <div class="brand">Tablero<small>Max Rolón</small></div>
+  <div class="brand"><img src="logo.png" alt="MR" class="logo"><div>Tablero<small>Max Rolón</small></div></div>
   <nav class="nav" id="nav"></nav>
   <div class="sfoot">
     <button class="btn pri full" onclick="quickAdd()">+ Nuevo <span class="kbd" style="margin-left:auto;color:#cfe0ff;border-color:#6d9cf0">N</span></button>
@@ -239,7 +240,7 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
 </aside>
 <div id="wrap">
   <header id="top">
-    <h1 id="vt">Inicio</h1>
+    <img src="logo.png" alt="MR" class="tlogo sm-only"><h1 id="vt">Inicio</h1>
     <div class="esps hm" id="espsD"></div>
     <div class="sp"></div>
     <span id="saved" class="mu2 hm" style="font-size:12px"></span>
@@ -271,7 +272,8 @@ const PEST=['Activo','En pausa','Cerrado'];
 const CATS=['Documento','Comprobante','Factura','Planilla','Contrato','Mail / Nota','Informe','Diseño / Esquema','Otro'];
 const PCATS=['Expensas','Servicios','Impuestos','Tarjeta','Alquiler','Seguro','Préstamo','Suscripción','Educación','Salud','Auto','Otro'];
 const MEDIOS=['Transferencia','Débito automático','Tarjeta de crédito','Tarjeta de débito','Mercado Pago','Efectivo','Otro'];
-const RECS={'':'No se repite','mensual':'Mensual','bimestral':'Bimestral','trimestral':'Trimestral','semestral':'Semestral','anual':'Anual'};
+const PERIODS={'':'No se repite','mensual':'Mensual','bimestral':'Bimestral','trimestral':'Trimestral','semestral':'Semestral','anual':'Anual'};
+const REGLAS={'':'Mismo día que el vencimiento','dia':'Día fijo del mes','ultimo':'Último día del mes','habil':'Día hábil N° del mes'};
 const RECM={mensual:1,bimestral:2,trimestral:3,semestral:6,anual:12};
 const MONEDAS=['ARS','USD','EUR'];
 const ECOLORS=['#4c8dff','#2fb67c','#e0a43a','#b07cff','#e5534b','#2bb7c4','#e86fb0','#8b93a1'];
@@ -317,6 +319,28 @@ const ICON={
  ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
  mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
 };
+
+/* ===================== Recurrencias y feriados ===================== */
+let FER=new Set();
+function ymd(y,m,d){return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function lastDay(y,m){return new Date(y,m,0).getDate()}
+function easter(Y){const a=Y%19,b=Math.floor(Y/100),c=Y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);return[Math.floor((h+l-7*m+114)/31),((h+l-7*m+114)%31)+1]}
+function fallbackFer(y){const[em,ed]=easter(y);const E=ymd(y,em,ed);return[ymd(y,1,1),addDays(E,-48),addDays(E,-47),ymd(y,3,24),ymd(y,4,2),addDays(E,-2),ymd(y,5,1),ymd(y,5,25),ymd(y,6,20),ymd(y,7,9),ymd(y,12,8),ymd(y,12,25)]}
+async function loadFeriados(){const y=new Date().getFullYear();for(const yy of[y,y+1]){let L=null;try{const c=JSON.parse(localStorage.getItem('tb_fer_'+yy)||'null');if(c&&Date.now()-c.t<15*864e5)L=c.L}catch(e){}
+  if(!L){try{const r=await fetch('https://api.argentinadatos.com/v1/feriados/'+yy);if(r.ok){const j=await r.json();if(Array.isArray(j)&&j.length){L=j.map(x=>x.fecha).filter(Boolean);try{localStorage.setItem('tb_fer_'+yy,JSON.stringify({t:Date.now(),L}))}catch(e){}}}}catch(e){}}
+  (L||fallbackFer(yy)).forEach(f=>FER.add(f))}}
+function isHabil(iso){const wd=new Date(iso+'T12:00:00').getDay();return wd!==0&&wd!==6&&!FER.has(iso)}
+function parseRec(s){const[per,rr]=String(s||'').split('|');const[regla,n]=String(rr||'').split(':');return{per:per||'',regla:regla||'',n:+n||0}}
+function recLabel(s){const r=parseRec(s);if(!r.per)return '';let t=PERIODS[r.per]||r.per;if(r.regla==='ultimo')t+=' · último día';else if(r.regla==='dia')t+=' · día '+r.n;else if(r.regla==='habil')t+=' · '+r.n+'° día hábil';return t}
+function dueInMonth(y,m,regla,n,refDay){const ld=lastDay(y,m);if(regla==='ultimo')return ymd(y,m,ld);if(regla==='dia')return ymd(y,m,Math.min(n||1,ld));if(regla==='habil'){let c=0;for(let d=1;d<=ld;d++){const iso=ymd(y,m,d);if(isHabil(iso)&&++c===(n||1))return iso}return ymd(y,m,ld)}return ymd(y,m,Math.min(refDay||1,ld))}
+function nextDue(venc,rec){const r=parseRec(rec);const k=RECM[r.per];if(!k||!venc)return null;const[y,m,d]=venc.split('-').map(Number);const t=m-1+k;return dueInMonth(y+Math.floor(t/12),t%12+1,r.regla,r.n,d)}
+function firstDue(rec){const r=parseRec(rec);if(!r.per||!r.regla)return null;const[y,m]=TODAY().split('-').map(Number);let f=dueInMonth(y,m,r.regla,r.n,1);if(f<TODAY()){const t=m;f=dueInMonth(y+Math.floor(t/12),t%12+1,r.regla,r.n,1)}return f}
+function recWidget(id,val){const r=parseRec(val);const showN=['dia','habil'].includes(r.regla);
+  return `<div class="f"><label>Se repite</label><select id="${id}_p" onchange="recSync('${id}')">${Object.entries(PERIODS).map(([k,l])=>`<option value="${k}" ${k===r.per?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div class="f ${r.per?'':'hide'}" id="${id}_rw"><label>Cuándo vence</label><div style="display:flex;gap:6px"><select id="${id}_r" style="flex:1;min-width:0" onchange="recSync('${id}')">${Object.entries(REGLAS).map(([k,l])=>`<option value="${k}" ${k===r.regla?'selected':''}>${l}</option>`).join('')}</select><input id="${id}_n" type="number" min="1" max="31" inputmode="numeric" value="${r.n||''}" class="${showN?'':'hide'}" style="width:62px" onchange="recSync('${id}')"></div></div>`}
+function recVal(id){const p=$('#'+id+'_p').value;if(!p)return '';const r=$('#'+id+'_r').value;if(!r)return p;if(r==='ultimo')return p+'|ultimo';const n=Math.max(1,Math.min(r==='habil'?23:31,+$('#'+id+'_n').value||1));return p+'|'+r+':'+n}
+function recSync(id){const p=$('#'+id+'_p').value,r=$('#'+id+'_r').value,ni=$('#'+id+'_n');$('#'+id+'_rw').classList.toggle('hide',!p);const sn=['dia','habil'].includes(r);ni.classList.toggle('hide',!sn);if(sn&&!ni.value)ni.value=r==='dia'?10:1;
+  const v=recVal(id);if(id==='np'){const f=firstDue(v);if(f&&$('#pv'))$('#pv').value=f}if(id==='dp')pUpd('recurrencia',v)}
 
 /* ===================== Datos ===================== */
 let D={};TABLES.forEach(t=>D[t]=[]);
@@ -506,19 +530,19 @@ V.pagos=()=>{
   const fl=`<div class="filters"><div class="seg"><button class="${PF.vista==='apagar'?'on':''}" onclick="PF.vista='apagar';render()">A pagar</button><button class="${PF.vista==='pagados'?'on':''}" onclick="PF.vista='pagados';render()">Pagados</button><button class="${PF.vista==='mes'?'on':''}" onclick="PF.vista='mes';render()">Por mes</button></div>${PF.vista==='mes'?`<input type="month" value="${PF.mes}" onchange="PF.mes=this.value;render()">`:''}<select onchange="PF.cat=this.value;render()"><option value="">Categoría: todas</option>${PCATS.map(c=>`<option ${PF.cat===c?'selected':''}>${c}</option>`).join('')}</select><div class="sp"></div><span class="mu num" style="font-size:12.5px">${L.length} · ${tot(L)}</span><button class="btn sm hm" onclick="exportPagosCSV(window._pv)">⤓ CSV</button><button class="btn sm pri" onclick="newPago()">+ Pago</button></div>`;
   window._pv=L;
   if(!L.length)return sum+fl+`<div class="empty">${PF.vista==='apagar'?'No hay pagos pendientes.':'Sin pagos en esta vista.'} <a onclick="newPago()">Registrar uno</a></div>`;
-  return sum+fl+`<div class="list">${L.map(p=>{const st=pagoSt(p);const f=st==='pagado'?(p.fecha_pago||p.vencimiento):p.vencimiento;const nd=docsOf('pago_id',p.id).length;return `<div class="li" onclick="openDr('pago','${p.id}')">${f?dchip(f,st==='pagado'||st==='cancelado'):'<div class="dchip"><b>—</b><span>s/f</span></div>'}<div class="t"><b>${esc(p.concepto)}</b><span>${[p.categoria,!ESP?espName(p.espacio_id):'',p.recurrencia?'↻ '+RECS[p.recurrencia]:'',st==='pagado'&&p.medio?p.medio:'',nd?'📎 '+nd:''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</span></div><span class="amt">${money(p.monto,p.moneda)}</span><span class="hm">${ppill(p)}</span>${st==='pendiente'||st==='vencido'?`<button class="btn sm ok" onclick="event.stopPropagation();payNow('${p.id}')">Pagar</button>`:''}</div>`}).join('')}</div>`;
+  return sum+fl+`<div class="list">${L.map(p=>{const st=pagoSt(p);const f=st==='pagado'?(p.fecha_pago||p.vencimiento):p.vencimiento;const nd=docsOf('pago_id',p.id).length;return `<div class="li" onclick="openDr('pago','${p.id}')">${f?dchip(f,st==='pagado'||st==='cancelado'):'<div class="dchip"><b>—</b><span>s/f</span></div>'}<div class="t"><b>${esc(p.concepto)}</b><span>${[p.categoria,!ESP?espName(p.espacio_id):'',p.recurrencia?'↻ '+recLabel(p.recurrencia):'',st==='pagado'&&p.medio?p.medio:'',nd?'📎 '+nd:''].filter(Boolean).map(esc).join(' · ')||'&nbsp;'}</span></div><span class="amt">${money(p.monto,p.moneda)}</span><span class="hm">${ppill(p)}</span>${st==='pendiente'||st==='vencido'?`<button class="btn sm ok" onclick="event.stopPropagation();payNow('${p.id}')">Pagar</button>`:''}</div>`}).join('')}</div>`;
 };
 async function payNow(id){const p=G.pago(id);modal(`<h3>Registrar pago</h3><div class="mu" style="margin-bottom:12px">${esc(p.concepto)} · ${money(p.monto,p.moneda)}</div>
   <div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Fecha de pago</label><input type="date" id="pf" value="${TODAY()}"></div><div class="f"><label>Monto pagado</label><input id="pm" inputmode="decimal" value="${NF.format(+p.monto||0)}"></div><div class="f" style="grid-column:1/-1"><label>Medio</label><select id="pmed">${MEDIOS.map(m=>`<option ${m===p.medio?'selected':''}>${m}</option>`).join('')}</select></div></div>
   <div class="f"><label>Comprobante (opcional)</label><input type="file" id="pfile" multiple></div>
-  ${p.recurrencia?`<div class="mu" style="font-size:12.5px">↻ Se va a generar el próximo vencimiento (${RECS[p.recurrencia].toLowerCase()}).</div>`:''}
+  ${p.recurrencia?`<div class="mu" style="font-size:12.5px">↻ Se va a generar el próximo vencimiento (${recLabel(p.recurrencia).toLowerCase()} · ${fd(nextDue(p.vencimiento||TODAY(),p.recurrencia))}).</div>`:''}
   <div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn ok" id="pbtn" onclick="confirmPay('${id}')">Confirmar pago</button></div>`)}
 async function confirmPay(id){const p=G.pago(id);$('#pbtn').disabled=true;const files=$('#pfile').files;const fp=$('#pf').value||TODAY(),monto=parseMonto($('#pm').value),medio=$('#pmed').value;
   await upd('pagos',id,{estado:'Pagado',fecha_pago:fp,monto,medio});
   if(files&&files.length)await uploadFiles(files,{pago_id:id,espacio_id:p.espacio_id,tema_id:p.tema_id,categoria:'Comprobante'});
   if(p.tema_id)await logT(p.tema_id,`Pago registrado: ${p.concepto} · ${money(monto,p.moneda)}`);
   let msg='Pago registrado';
-  if(p.recurrencia&&p.vencimiento){const nv=addMonths(p.vencimiento,RECM[p.recurrencia]);const ya=D.pagos.some(x=>x.concepto===p.concepto&&x.vencimiento===nv&&x.espacio_id===p.espacio_id);if(!ya){await ins('pagos',{concepto:p.concepto,categoria:p.categoria,monto:p.monto,moneda:p.moneda,vencimiento:nv,espacio_id:p.espacio_id,tema_id:p.tema_id,recurrencia:p.recurrencia,medio:p.medio,notas:p.notas,estado:'A pagar'});msg+=` · próximo vencimiento ${fd(nv)}`}}
+  if(p.recurrencia&&p.vencimiento){const nv=nextDue(p.vencimiento,p.recurrencia);const ya=D.pagos.some(x=>x.concepto===p.concepto&&x.vencimiento===nv&&x.espacio_id===p.espacio_id);if(!ya){await ins('pagos',{concepto:p.concepto,categoria:p.categoria,monto:p.monto,moneda:p.moneda,vencimiento:nv,espacio_id:p.espacio_id,tema_id:p.tema_id,recurrencia:p.recurrencia,medio:p.medio,notas:p.notas,estado:'A pagar'});msg+=` · próximo vencimiento ${fd(nv)}`}}
   closeModal();render();toast(msg)}
 
 /* ---------- Agenda ---------- */
@@ -657,7 +681,7 @@ async function reloadAll(){await loadAll();render();toast('Datos actualizados')}
 /* ---------- Exportaciones ---------- */
 function csv(rows){return '\ufeff'+rows.map(r=>r.map(c=>{c=String(c??'');return /[;"\n\r]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(';')).join('\r\n')}
 function exportTemasCSV(){const rows=[['Espacio','Proyecto','Tema','Estado','Prioridad','Contraparte','Alta','Objetivo','Última actualización','Pendientes abiertos','Último avance']];D.temas.filter(inEsp).forEach(t=>{const s=pendStat(t.id),lu=lastUser(t.id);rows.push([espName(t.espacio_id),projName(t.proyecto_id),t.titulo,t.estado,t.prioridad,t.contraparte,fd(t.alta),fd(t.objetivo),fdt(t.actualizado),s.open,lu?lu.texto:''])});download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Temas_'+TODAY()+'.csv')}
-function exportPagosCSV(L){const rows=[['Espacio','Concepto','Categoría','Vencimiento','Estado','Fecha de pago','Medio','Moneda','Monto','Recurrencia','Notas']];(L||[]).forEach(p=>rows.push([espName(p.espacio_id),p.concepto,p.categoria,fd(p.vencimiento),p.estado==='Pagado'?'Pagado':pagoSt(p)==='vencido'?'Vencido':p.estado,fd(p.fecha_pago),p.medio,p.moneda,String(p.monto).replace('.',','),RECS[p.recurrencia||''],p.notas]));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Pagos_'+TODAY()+'.csv')}
+function exportPagosCSV(L){const rows=[['Espacio','Concepto','Categoría','Vencimiento','Estado','Fecha de pago','Medio','Moneda','Monto','Recurrencia','Notas']];(L||[]).forEach(p=>rows.push([espName(p.espacio_id),p.concepto,p.categoria,fd(p.vencimiento),p.estado==='Pagado'?'Pagado':pagoSt(p)==='vencido'?'Vencido':p.estado,fd(p.fecha_pago),p.medio,p.moneda,String(p.monto).replace('.',','),recLabel(p.recurrencia),p.notas]));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Pagos_'+TODAY()+'.csv')}
 function exportDocsCSV(){const rows=[['Documento','Categoría','Espacio','Tema','Pago','Nota','Fecha','Tamaño','Link']];D.documentos.filter(inEsp).forEach(d=>rows.push([d.nombre,d.categoria,espName(d.espacio_id),(G.tema(d.tema_id)||{}).titulo||'',(G.pago(d.pago_id)||{}).concepto||'',d.nota,fd(d.creado),d.size?fsize(d.size):'',d.url||'']));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Documentos_'+TODAY()+'.csv')}
 function exportJSON(){download(new Blob([JSON.stringify({app:'tablero-max',exportado:now(),datos:D},null,1)],{type:'application/json'}),'Respaldo_Tablero_'+TODAY()+'.json')}
 
@@ -681,13 +705,13 @@ function newPago(fecha){const e=ESP||(espsSorted().find(x=>norm(x.nombre)==='per
   modal(`<h3>Nuevo pago / vencimiento</h3><div class="f"><label>Concepto</label><input id="pc" placeholder="Ej. Expensas noviembre"></div>
   <div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Monto</label><input id="pm" inputmode="decimal" placeholder="0,00"></div><div class="f"><label>Moneda</label><select id="pmo">${MONEDAS.map(m=>`<option>${m}</option>`).join('')}</select></div>
   <div class="f"><label>Vencimiento</label><input type="date" id="pv" value="${fecha||''}"></div><div class="f"><label>Categoría</label><select id="pca">${PCATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
-  <div class="f"><label>Se repite</label><select id="pr">${Object.entries(RECS).map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div><div class="f"><label>Espacio</label><select id="pe">${espOpts(e,true)}</select></div></div>
+  ${recWidget('np','')}<div class="f"><label>Espacio</label><select id="pe">${espOpts(e,true)}</select></div></div>
   <label class="ck2"><input type="checkbox" id="pya"> Ya está pagado</label>
   <div class="f"><label>Comprobante / factura (opcional)</label><input type="file" id="pfile" multiple></div>
   <div class="f"><label>Notas</label><input id="pn" placeholder="Nº de cliente, CBU del destinatario, etc."></div>
   <div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" id="pb" onclick="createPago()">Guardar</button></div>`)}
 async function createPago(){const c=$('#pc').value.trim();if(!c){$('#pc').focus();return}$('#pb').disabled=true;const ya=$('#pya').checked;
-  const row={concepto:c,monto:parseMonto($('#pm').value),moneda:$('#pmo').value,vencimiento:$('#pv').value||null,categoria:$('#pca').value,recurrencia:$('#pr').value,espacio_id:$('#pe').value||null,notas:$('#pn').value.trim(),estado:ya?'Pagado':'A pagar',fecha_pago:ya?($('#pv').value||TODAY()):null};
+  const row={concepto:c,monto:parseMonto($('#pm').value),moneda:$('#pmo').value,vencimiento:$('#pv').value||null,categoria:$('#pca').value,recurrencia:recVal('np'),espacio_id:$('#pe').value||null,notas:$('#pn').value.trim(),estado:ya?'Pagado':'A pagar',fecha_pago:ya?($('#pv').value||TODAY()):null};
   const p=await ins('pagos',row);const fs=$('#pfile').files;if(p&&fs.length)await uploadFiles(fs,{pago_id:p.id,espacio_id:p.espacio_id,categoria:'Comprobante'});closeModal();render();toast('Pago guardado')}
 function newRec(fecha){modal(`<h3>Nuevo recordatorio</h3><div class="f"><label>Qué</label><input id="rt" placeholder="Ej. Llamar al banco"></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Fecha</label><input type="date" id="rf2" value="${fecha||TODAY()}"></div><div class="f"><label>Hora (opcional)</label><input type="time" id="rh"></div><div class="f"><label>Espacio</label><select id="re">${espOpts(ESP,true)}</select></div><div class="f"><label>Tema (opcional)</label><select id="rtm"><option value="">—</option>${D.temas.filter(t=>isOpen(t)&&inEsp(t)).map(t=>`<option value="${t.id}">${esc(t.titulo)}</option>`).join('')}</select></div></div><div class="f"><label>Notas</label><input id="rn"></div><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="createRec()">Guardar</button></div>`)}
 async function createRec(){const t=$('#rt').value.trim();if(!t){$('#rt').focus();return}const tid=$('#rtm').value||null;const tm=tid&&G.tema(tid);await ins('recordatorios',{titulo:t,fecha:$('#rf2').value||TODAY(),hora:$('#rh').value||null,espacio_id:tm?tm.espacio_id:($('#re').value||null),tema_id:tid,notas:$('#rn').value.trim()});closeModal();render();toast('Recordatorio guardado')}
@@ -763,10 +787,11 @@ function drPago(){const p=G.pago(DR.id);if(!p)return null;const st=pagoSt(p),doc
    <div class="f"><label>Fecha de pago</label><input type="date" value="${p.fecha_pago||''}" onchange="pUpd('fecha_pago',this.value||null)"></div>
    <div class="f"><label>Medio</label><select onchange="pUpd('medio',this.value)"><option value="">—</option>${MEDIOS.map(m=>`<option ${m===p.medio?'selected':''}>${m}</option>`).join('')}</select></div>
    <div class="f"><label>Categoría</label><select onchange="pUpd('categoria',this.value)">${PCATS.map(c=>`<option ${c===p.categoria?'selected':''}>${c}</option>`).join('')}</select></div>
-   <div class="f"><label>Se repite</label><select onchange="pUpd('recurrencia',this.value)">${Object.entries(RECS).map(([k,l])=>`<option value="${k}" ${k===(p.recurrencia||'')?'selected':''}>${l}</option>`).join('')}</select></div>
+   ${recWidget('dp',p.recurrencia||'')}
    <div class="f"><label>Espacio</label><select onchange="pUpd('espacio_id',this.value||null)">${espOpts(p.espacio_id,true)}</select></div>
    <div class="f" style="grid-column:1/-1"><label>Vinculado al tema</label><select onchange="pUpd('tema_id',this.value||null)"><option value="">—</option>${D.temas.filter(t=>!p.espacio_id||t.espacio_id===p.espacio_id).map(t=>`<option value="${t.id}" ${t.id===p.tema_id?'selected':''}>${esc(t.titulo)}</option>`).join('')}</select></div>
   </div>
+  ${p.recurrencia?`<div class="mu" style="font-size:12.5px;margin-top:10px">↻ ${esc(recLabel(p.recurrencia))}${p.vencimiento?` · al registrar el pago se genera el próximo vencimiento: <b style="color:var(--tx)">${fd(nextDue(p.vencimiento,p.recurrencia))}</b>`:''}</div>`:''}
   <div class="ds"><h3>Notas</h3><textarea rows="3" placeholder="Nº de cliente, CBU, referencia, etc." onchange="pUpd('notas',this.value)">${esc(p.notas)}</textarea></div>
   <div class="ds"><h3>Comprobantes y facturas <span class="r"><select id="acat" style="padding:4px 6px;font-size:12px">${['Comprobante','Factura','Documento','Otro'].map(c=>`<option>${c}</option>`).join('')}</select><button class="btn sm" onclick="newLink({pago_id:'${p.id}',espacio_id:${p.espacio_id?`'${p.espacio_id}'`:'null'}})">+ Link</button></span></h3>${dropZone()}${attList(docs)}</div>
   <div class="mu2" style="font-size:11.5px;margin-top:22px">Cargado ${fdt(p.creado)}</div></div>
@@ -798,7 +823,7 @@ async function doSignup(){const e=$('#le').value.trim(),p=$('#lp').value;$('#ler
   const{data,error}=await sb.auth.signUp({email:e,password:p,options:{emailRedirectTo:location.origin+location.pathname}});if(error){$('#lerr').textContent=/disabled|not allowed/i.test(error.message)?'El registro de usuarios nuevos está cerrado.':error.message;return}
   if(data.session)start(data.user);else $('#lerr').innerHTML='<span class="okc">Usuario creado. Revisá tu mail para confirmarlo y después ingresá.</span>'}
 async function doReset(){const e=$('#le').value.trim();if(!e){$('#lerr').textContent='Escribí tu mail arriba';return}const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});$('#lerr').innerHTML=error?esc(error.message):'<span class="okc">Te enviamos un mail para restablecer la contraseña.</span>'}
-async function start(u){USER=u;$('#login').classList.add('hide');$('#app').classList.remove('hide');$('#main').innerHTML='<div class="empty">Cargando…</div>';await loadAll();
+async function start(u){USER=u;loadFeriados();$('#login').classList.add('hide');$('#app').classList.remove('hide');$('#main').innerHTML='<div class="empty">Cargando…</div>';await loadAll();
   if(!D.espacios.length){await insMany('espacios',[{nombre:'Ceta',color:'#4c8dff',orden:0},{nombre:'EFM',color:'#b07cff',orden:1},{nombre:'Personal',color:'#2fb67c',orden:2}])}
   if(ESP&&!G.esp(ESP))ESP='';render()}
 
