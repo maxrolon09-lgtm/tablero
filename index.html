@@ -783,7 +783,7 @@ async function asociarMovimientos(silent){if(NO_CUENTAS||NO_CONSUMOS||!D.cuentas
   const L=D.consumos.filter(c=>!c.pago_id&&!isRech(c)&&c.fecha&&c.tipo!=='compra').sort((a,b)=>a.fecha<b.fecha?-1:1);
   for(const c of L){const cu=cuentaDeMov(c);if(!cu)continue;
     const ps=pagosDe(cu.id).filter(p=>p.estado!=='Cancelado'&&!usados.has(p.id));const dd=x=>Math.abs(daysTo(x)-daysTo(c.fecha));
-    let p=ps.filter(p=>p.estado!=='Pagado'&&p.vencimiento&&dd(p.vencimiento)<=20).sort((a,b)=>dd(a.vencimiento)-dd(b.vencimiento))[0],res,nv=null;
+    const mismoMes=p=>p.vencimiento.slice(0,7)===c.fecha.slice(0,7);let p=ps.filter(p=>p.estado!=='Pagado'&&p.vencimiento&&(mismoMes(p)||dd(p.vencimiento)<=20)).sort((a,b)=>(mismoMes(b)-mismoMes(a))||(dd(a.vencimiento)-dd(b.vencimiento)))[0],res,nv=null;
     const medio=c.tipo==='transferencia'?'Transferencia':c.tipo==='debito'?'Tarjeta de débito':c.tipo==='credito'?'Tarjeta de crédito':'';
     if(p){await upd('pagos',p.id,{estado:'Pagado',fecha_pago:c.fecha,monto:+c.monto||+p.monto||0,medio:medio||p.medio});nv=await genNext(G.pago(p.id));res=`${p.concepto}: marcado como pagado el ${fd(c.fecha)} · ${money(c.monto,c.moneda)}${nv?' · próximo vencimiento '+fd(nv):''}`}
     else{p=ps.filter(p=>p.estado==='Pagado'&&p.fecha_pago&&(dd(p.fecha_pago)<=7||(p.fecha_pago.slice(0,7)===c.fecha.slice(0,7)&&!+p.monto))).sort((a,b)=>dd(a.fecha_pago)-dd(b.fecha_pago))[0];
