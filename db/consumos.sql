@@ -74,4 +74,44 @@ end $$;
 revoke all on function ingest_consumos(text, jsonb) from public;
 grant execute on function ingest_consumos(text, jsonb) to anon, authenticated;
 
+-- Eventos detectados por el bot (ej. comprobante de expensas enviado)
+create table if not exists mail_eventos (
+  id uuid primary key default gen_random_uuid(),
+  owner uuid not null default auth.uid() references auth.users on delete cascade,
+  msg_id text not null,
+  clave text not null,           -- ej. 'expensas'
+  periodo text default '',       -- 'YYYY-MM'
+  fecha date,
+  asunto text default '',
+  url text default '',
+  adjunto text default '',
+  procesado boolean default false,
+  resultado text default '',
+  creado timestamptz default now(),
+  unique (owner, msg_id)
+);
+alter table mail_eventos enable row level security;
+drop policy if exists solo_dueno on mail_eventos;
+create policy solo_dueno on mail_eventos for all to authenticated using (owner = auth.uid()) with check (owner = auth.uid());
+revoke all on mail_eventos from anon;
+
+create or replace function ingest_eventos(p_token text, p_items jsonb)
+returns int language plpgsql security definer set search_path = public as $$
+declare o uuid; n int := 0; it jsonb;
+begin
+  select owner into o from ingest_tokens where token = p_token;
+  if o is null then raise exception 'clave inválida'; end if;
+  for it in select * from jsonb_array_elements(p_items) loop
+    insert into mail_eventos(owner, msg_id, clave, periodo, fecha, asunto, url, adjunto)
+    values (o, it->>'msg_id', coalesce(it->>'clave',''), coalesce(it->>'periodo',''), nullif(it->>'fecha','')::date,
+            coalesce(it->>'asunto',''), coalesce(it->>'url',''), coalesce(it->>'adjunto',''))
+    on conflict (owner, msg_id) do nothing;
+    if found then n := n + 1; end if;
+  end loop;
+  update ingest_tokens set ultimo_uso = now() where owner = o;
+  return n;
+end $$;
+revoke all on function ingest_eventos(text, jsonb) from public;
+grant execute on function ingest_eventos(text, jsonb) to anon, authenticated;
+
 select 'ok' as resultado;

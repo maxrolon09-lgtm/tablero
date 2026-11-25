@@ -295,8 +295,8 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
 const SB_URL='https://sipgrhcxignspvkeqgec.supabase.co';
 const SB_KEY='sb_publishable_kSznWqJh-iaCZC5wCaHYiQ_mSbXwdF4';
 const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos','cuentas','consumos'];
-let NO_CUENTAS=false,NO_CONSUMOS=false;
+const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos','cuentas','consumos','mail_eventos'];
+let NO_CUENTAS=false,NO_CONSUMOS=false,NO_EVENTOS=false;
 
 const ESTADOS=['Pendiente','En curso','En espera','Bloqueado','Cerrado'];
 const EC={'Pendiente':'#8b93a1','En curso':'#4c8dff','En espera':'#e0a43a','Bloqueado':'#e5534b','Cerrado':'#2fb67c'};
@@ -384,7 +384,7 @@ let D={};TABLES.forEach(t=>D[t]=[]);
 let USER=null,lastLoad=0,busyN=0;
 function busy(on){busyN+=on?1:-1;if(busyN<0)busyN=0;const b=$('#busy');b.style.width=busyN?'70%':'100%';if(!busyN)setTimeout(()=>{if(!busyN)b.style.width='0'},300);$('#saved').textContent=busyN?'Guardando…':'Guardado ✓'}
 function fail(e){console.error(e);toast('Error: '+(e&&e.message||e));}
-async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{const t=TABLES[i];if(r.error){if(t==='cuentas'){D.cuentas=[];NO_CUENTAS=true;return}if(t==='consumos'){D.consumos=[];NO_CONSUMOS=true;return}throw r.error}if(t==='cuentas')NO_CUENTAS=false;if(t==='consumos')NO_CONSUMOS=false;D[t]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
+async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{const t=TABLES[i];if(r.error){if(t==='cuentas'){D.cuentas=[];NO_CUENTAS=true;return}if(t==='consumos'){D.consumos=[];NO_CONSUMOS=true;return}if(t==='mail_eventos'){D.mail_eventos=[];NO_EVENTOS=true;return}throw r.error}if(t==='cuentas')NO_CUENTAS=false;if(t==='consumos')NO_CONSUMOS=false;if(t==='mail_eventos')NO_EVENTOS=false;D[t]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
 async function ins(t,row){if(t==='pagos'&&NO_CUENTAS)delete row.cuenta_id;busy(1);try{const{data,error}=await sb.from(t).insert(row).select().single();if(error)throw error;D[t].push(data);return data}catch(e){fail(e);return null}finally{busy(0)}}
 async function insMany(t,rows){if(!rows.length)return[];busy(1);try{const{data,error}=await sb.from(t).insert(rows).select();if(error)throw error;D[t].push(...data);return data}catch(e){fail(e);return[]}finally{busy(0)}}
 async function upd(t,id,patch){const o=D[t].find(x=>x.id===id);if(o)Object.assign(o,patch);busy(1);try{const{error}=await sb.from(t).update(patch).eq('id',id);if(error)throw error}catch(e){fail(e);await loadAll();render()}finally{busy(0)}}
@@ -605,7 +605,7 @@ async function confirmPay(id){const p=G.pago(id);$('#pbtn').disabled=true;const 
   if(files&&files.length)await uploadFiles(files,{pago_id:id,espacio_id:p.espacio_id,tema_id:p.tema_id,categoria:'Comprobante'});
   if(p.tema_id)await logT(p.tema_id,`Pago registrado: ${p.concepto} · ${money(monto,p.moneda)}`);
   let msg='Pago registrado';
-  if(p.recurrencia&&p.vencimiento){const nv=nextDue(p.vencimiento,p.recurrencia);const ya=D.pagos.some(x=>(p.cuenta_id?x.cuenta_id===p.cuenta_id:x.concepto===p.concepto)&&x.vencimiento===nv&&x.espacio_id===p.espacio_id);if(!ya){await ins('pagos',{cuenta_id:p.cuenta_id||null,concepto:p.concepto,categoria:p.categoria,monto:p.monto,moneda:p.moneda,vencimiento:nv,espacio_id:p.espacio_id,tema_id:p.tema_id,recurrencia:p.recurrencia,medio:p.medio,notas:p.notas,estado:'A pagar'});msg+=` · próximo vencimiento ${fd(nv)}`}}
+  const nv=await genNext(G.pago(id));if(nv)msg+=` · próximo vencimiento ${fd(nv)}`;
   closeModal();render();toast(msg)}
 
 /* ---------- Cuentas / Destinatarios ---------- */
@@ -730,6 +730,31 @@ function exportConsumosCSV(){const rows=[['Fecha','Hora','Tipo','Tarjeta / cuent
 async function lectorClave(regen){const{data,error}=await sb.rpc('get_ingest_token',{regenerar:!!regen});if(error){fail(error);return}
   modal(`<h3>Clave del bot de mails</h3><div class="mu" style="font-size:13px;line-height:1.5;margin-bottom:10px">Copiala y pegala en el Apps Script de tu Gmail, en <b>Propiedades del script</b>, con el nombre <b>TOKEN</b>. Solo sirve para que el bot cargue consumos en el tablero; no da acceso a nada más.</div><div style="display:flex;gap:6px"><input id="lk" readonly value="${esc(data)}" style="flex:1;font-family:monospace;font-size:12px"><button class="btn" onclick="copyTxt($('#lk').value)">Copiar</button></div><div class="mf"><button class="btn danger" style="margin-right:auto" onclick="confirmBox('Si generás una clave nueva, la anterior deja de funcionar y tenés que actualizarla en el Apps Script. ¿Seguir?','Generar nueva',()=>lectorClave(true))">Generar nueva</button><button class="btn" onclick="closeModal()">Cerrar</button></div>`)}
 async function lectorInfo(){try{const{data}=await sb.rpc('lector_estado');const e=$('#lectorEst');if(e)e.innerHTML=data?`Última lectura: <b style="color:var(--tx)">${fdt(data)}</b>`:'Todavía no se conectó ningún lector.'}catch(e){}}
+
+/* ---------- Pagos confirmados por mail (bot) ---------- */
+async function genNext(p){if(!(p.recurrencia&&p.vencimiento))return null;const nv=nextDue(p.vencimiento,p.recurrencia);if(!nv)return null;
+  const ya=D.pagos.some(x=>(p.cuenta_id?x.cuenta_id===p.cuenta_id:x.concepto===p.concepto)&&x.vencimiento===nv&&x.espacio_id===p.espacio_id);if(ya)return null;
+  await ins('pagos',{cuenta_id:p.cuenta_id||null,concepto:p.concepto,categoria:p.categoria,monto:p.monto,moneda:p.moneda,vencimiento:nv,espacio_id:p.espacio_id,tema_id:p.tema_id,recurrencia:p.recurrencia,medio:p.medio,notas:p.notas,estado:'A pagar'});return nv}
+function montoTransferencia(fecha,ref){if(!fecha)return null;const c=D.consumos.filter(x=>x.tipo==='transferencia'&&x.fecha&&Math.abs(daysTo(x.fecha)-daysTo(fecha))<=2&&+x.monto);
+  if(c.length===1)return +c[0].monto;const k=c.filter(x=>/cons|expens|propiet|admin/i.test(x.comercio+' '+x.comercio_detalle));if(k.length===1)return +k[0].monto;
+  if(ref&&c.length){const s=[...c].sort((a,b)=>Math.abs(a.monto-ref)-Math.abs(b.monto-ref));if(Math.abs(s[0].monto-ref)/ref<0.35)return +s[0].monto}return null}
+async function procesarEventos(){if(NO_EVENTOS)return;const pend=D.mail_eventos.filter(e=>!e.procesado);if(!pend.length)return;const msgs=[];
+  for(const e of pend){const ws=norm(e.clave).split(/\s+/).filter(Boolean);const match=p=>{const h=norm(p.concepto+' '+cuentaName(p.cuenta_id)+' '+p.categoria);return ws.every(w=>h.includes(w))};
+    const cands=D.pagos.filter(p=>!['Pagado','Cancelado'].includes(p.estado)&&match(p));
+    const dist=p=>Math.abs(daysTo(p.vencimiento||e.fecha)-daysTo(e.fecha));
+    let p=cands.filter(p=>(p.vencimiento||'').startsWith(e.periodo)).sort((a,b)=>dist(a)-dist(b))[0]||cands.filter(p=>p.vencimiento&&dist(p)<=45).sort((a,b)=>dist(a)-dist(b))[0];
+    const [py,pm]=(e.periodo||'').split('-');const per=pm?MESL[+pm-1]+' '+py:'';let res,pid,esp;
+    if(p){const mt=montoTransferencia(e.fecha,+p.monto||null);const monto=mt||+p.monto||0;
+      await upd('pagos',p.id,{estado:'Pagado',fecha_pago:e.fecha,medio:p.medio||'Transferencia',monto});const nv=await genNext(G.pago(p.id));
+      if(p.tema_id)await logT(p.tema_id,`Pago confirmado por mail: ${p.concepto} · ${money(monto,p.moneda)}`);
+      res=`${p.concepto}${per?' ('+per+')':''} marcado como pagado${monto?' · '+money(monto,p.moneda):''}${nv?' · próximo vencimiento '+fd(nv):''}`;pid=p.id;esp=p.espacio_id}
+    else{const prev=D.pagos.filter(match).sort((a,b)=>(b.vencimiento||'')>(a.vencimiento||'')?1:-1)[0];const mt=montoTransferencia(e.fecha,prev&&+prev.monto);
+      esp=prev?prev.espacio_id:(espsSorted().find(x=>norm(x.nombre)==='personal')||{}).id||null;
+      const np=await ins('pagos',{cuenta_id:prev?prev.cuenta_id:null,concepto:(prev?prev.concepto:(e.clave.charAt(0).toUpperCase()+e.clave.slice(1)))+(per?' '+per:''),categoria:prev?prev.categoria:'Expensas',monto:mt||0,moneda:'ARS',vencimiento:null,espacio_id:esp,estado:'Pagado',fecha_pago:e.fecha,medio:'Transferencia'});
+      pid=np&&np.id;res=`No había un pago programado de "${e.clave}"${per?' para '+per:''}: se registró como pago nuevo${mt?' · '+money(mt,'ARS'):''}`}
+    if(pid&&e.url)await ins('documentos',{pago_id:pid,espacio_id:esp||null,nombre:'Mail: '+(e.asunto||'comprobante'),url:e.url,categoria:'Comprobante',nota:e.adjunto?'Adjunto en el mail: '+e.adjunto:''});
+    await upd('mail_eventos',e.id,{procesado:true,resultado:res});msgs.push(res)}
+  render();if(msgs.length)modal(`<h3>Pagos confirmados por mail</h3><div class="mu" style="font-size:13px;margin-bottom:10px">El bot detectó ${msgs.length===1?'un comprobante enviado':msgs.length+' comprobantes enviados'} y los registró:</div><div class="list">${msgs.map(m=>`<div class="li" style="cursor:default"><span class="dot" style="background:var(--ok)"></span><div class="t" style="white-space:normal"><span style="white-space:normal;color:var(--tx);font-size:13.5px">${esc(m)}</span></div></div>`).join('')}</div><div class="mf"><button class="btn pri" onclick="closeModal()">Entendido</button></div>`)}
 
 /* ---------- Agenda ---------- */
 V.agenda=()=>{
@@ -872,7 +897,7 @@ V.ajustes=()=>{
   return `<div class="grid2"><div><div class="sec" style="margin-top:0"><h2>Espacios <span class="r"><button class="btn sm pri" onclick="editEsp()">+ Espacio</button></span></h2><div class="list">${e.map(x=>{const n=D.temas.filter(t=>t.espacio_id===x.id).length+D.pagos.filter(p=>p.espacio_id===x.id).length;return `<div class="li" onclick="editEsp('${x.id}')"><span class="dot" style="background:${x.color};width:12px;height:12px"></span><div class="t"><b>${esc(x.nombre)}</b><span>${D.proyectos.filter(p=>p.espacio_id===x.id).length} proyectos · ${n} registros</span></div><span class="mu2">Editar</span></div>`}).join('')||'<div class="li mu">Sin espacios</div>'}</div></div>
    <div class="sec"><h2>Respaldo</h2><div class="pc"><div class="mu" style="font-size:13px;line-height:1.5;margin-bottom:10px">Los datos ya viven en tu base de Supabase. Igual conviene bajar un respaldo cada tanto: es un archivo con todos los registros (los archivos adjuntos se descargan desde Documentos).</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportJSON()">⤓ Respaldo completo (JSON)</button><button class="btn" onclick="exportTemasCSV()">⤓ Temas CSV</button><button class="btn" onclick="exportPagosCSV(D.pagos)">⤓ Pagos CSV</button></div></div></div></div>
    <div><div class="sec" style="margin-top:0"><h2>Cuenta</h2><div class="pc"><div class="mu" style="font-size:13px">Sesión iniciada como</div><div style="font-weight:600;margin:3px 0 12px">${esc(USER.email)}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="chgPass()">Cambiar contraseña</button><button class="btn" onclick="reloadAll()">↻ Recargar datos</button><button class="btn danger" onclick="logout()">Cerrar sesión</button></div></div></div>
-   <div class="sec"><h2>Bot de mails</h2><div class="pc mu" style="font-size:13px;line-height:1.6">Clasifica tu Gmail en etiquetas, saca las promociones de la bandeja y carga en <b style="color:var(--tx)">Consumos</b> los avisos de Santander y las compras.<div id="lectorEst" style="margin:8px 0">…</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="lectorClave()">Mostrar clave</button><button class="btn" onclick="go('consumos')">Ver consumos</button></div></div></div>
+   <div class="sec"><h2>Bot de mails</h2><div class="pc mu" style="font-size:13px;line-height:1.6">Clasifica tu Gmail en etiquetas, saca las promociones de la bandeja y carga en <b style="color:var(--tx)">Consumos</b> los avisos de Santander y las compras.<div id="lectorEst" style="margin:8px 0">…</div>${!NO_EVENTOS&&D.mail_eventos.length?`<div style="margin:6px 0 10px"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:650;margin-bottom:4px">Pagos confirmados por mail</div>${[...D.mail_eventos].sort((a,b)=>a.creado<b.creado?1:-1).slice(0,5).map(e=>`<div style="font-size:12.5px">${fd(e.fecha)} · ${esc(e.resultado||'pendiente')}</div>`).join('')}</div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="lectorClave()">Mostrar clave</button><button class="btn" onclick="go('consumos')">Ver consumos</button></div></div></div>
    <div class="sec"><h2>En el celular</h2><div class="pc mu" style="font-size:13px;line-height:1.6"><b style="color:var(--tx)">Android (Chrome):</b> menú ⋮ → <i>Agregar a la pantalla principal</i> / <i>Instalar app</i>.<br><b style="color:var(--tx)">iPhone (Safari):</b> botón compartir → <i>Agregar a inicio</i>.<br>Queda como una app, con tu sesión iniciada.</div></div></div></div>`;
 };
 function editEsp(id){const e=id?G.esp(id):null;window._ec=e?e.color:ECOLORS[D.espacios.length%ECOLORS.length];
@@ -1045,7 +1070,7 @@ async function doSignup(){const e=$('#le').value.trim(),p=$('#lp').value;$('#ler
 async function doReset(){const e=$('#le').value.trim();if(!e){$('#lerr').textContent='Escribí tu mail arriba';return}const{error}=await sb.auth.resetPasswordForEmail(e,{redirectTo:location.origin+location.pathname});$('#lerr').innerHTML=error?esc(error.message):'<span class="okc">Te enviamos un mail para restablecer la contraseña.</span>'}
 async function start(u){USER=u;loadFeriados();$('#login').classList.add('hide');$('#app').classList.remove('hide');$('#main').innerHTML='<div class="empty">Cargando…</div>';await loadAll();
   if(!D.espacios.length){await insMany('espacios',[{nombre:'Ceta',color:'#4c8dff',orden:0},{nombre:'EFM',color:'#b07cff',orden:1},{nombre:'Personal',color:'#2fb67c',orden:2}])}
-  if(ESP&&!G.esp(ESP))ESP='';render()}
+  if(ESP&&!G.esp(ESP))ESP='';render();procesarEventos()}
 
 /* ===================== Eventos ===================== */
 $('#q').addEventListener('input',e=>{Q=e.target.value;if(['inicio','agenda','proyectos','informes','ajustes'].includes(VIEW)&&Q.trim())VIEW='temas';render()});
@@ -1055,7 +1080,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='/'){e.preventDefault();$('#q').focus()}else if(e.key==='n'||e.key==='N'){e.preventDefault();quickAdd()}});
 window.addEventListener('dragover',e=>{if(!e.target.closest||!e.target.closest('#drop,.col'))e.preventDefault()});
 window.addEventListener('drop',e=>{if(!e.target.closest||!e.target.closest('#drop,.col'))e.preventDefault()});
-document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&USER&&Date.now()-lastLoad>60000&&!$('#modal').innerHTML){await loadAll();render()}});
+document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&USER&&Date.now()-lastLoad>60000&&!$('#modal').innerHTML){await loadAll();render();procesarEventos()}});
 const _saveProj=saveProj;saveProj=async function(id){const before=D.proyectos.length;await _saveProj(id);if(window._afterProj&&DR&&DR.k==='tema'&&D.proyectos.length>before){window._afterProj=false;const np=D.proyectos[D.proyectos.length-1];await upd('temas',DR.id,{proyecto_id:np.id,espacio_id:np.espacio_id,actualizado:now()});render()}};
 
 sb.auth.onAuthStateChange((ev,session)=>{if(ev==='PASSWORD_RECOVERY'){if(session)start(session.user).then(()=>chgPass())}if(ev==='SIGNED_OUT'){USER=null;showLogin()}});
