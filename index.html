@@ -742,7 +742,7 @@ async function procesarEventos(){if(NO_EVENTOS)return;const pend=D.mail_eventos.
   for(const e of pend){const ws=norm(e.clave).split(/\s+/).filter(Boolean);const match=p=>{const h=norm(p.concepto+' '+cuentaName(p.cuenta_id)+' '+p.categoria);return ws.every(w=>h.includes(w))};
     const cands=D.pagos.filter(p=>!['Pagado','Cancelado'].includes(p.estado)&&match(p));
     const dist=p=>Math.abs(daysTo(p.vencimiento||e.fecha)-daysTo(e.fecha));
-    let p=cands.filter(p=>(p.vencimiento||'').startsWith(e.periodo)).sort((a,b)=>dist(a)-dist(b))[0]||cands.filter(p=>p.vencimiento&&dist(p)<=45).sort((a,b)=>dist(a)-dist(b))[0];
+    let p=cands.filter(p=>(p.vencimiento||'').startsWith(e.periodo)).sort((a,b)=>dist(a)-dist(b))[0]||cands.filter(p=>p.vencimiento&&dist(p)<=10).sort((a,b)=>dist(a)-dist(b))[0];
     const [py,pm]=(e.periodo||'').split('-');const per=pm?MESL[+pm-1]+' '+py:'';let res,pid,esp;
     if(p){const mt=montoTransferencia(e.fecha,+p.monto||null);const monto=mt||+p.monto||0;
       await upd('pagos',p.id,{estado:'Pagado',fecha_pago:e.fecha,medio:p.medio||'Transferencia',monto});const nv=await genNext(G.pago(p.id));
