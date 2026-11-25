@@ -77,6 +77,7 @@ main{padding:20px 24px 80px}
 .sec h2 .r{margin-left:auto;text-transform:none;letter-spacing:0}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
 .grid2>div{min-width:0}
+.grid2.wide{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr)}
 main{overflow-x:hidden}
 .list{background:var(--p1);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden}
 .li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bd);cursor:pointer;min-height:46px}
@@ -203,7 +204,7 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
   main{padding:14px 12px 110px}
   .kpis{grid-template-columns:1fr 1fr}
   .kpi .v{font-size:21px}
-  .grid2{grid-template-columns:1fr}
+  .grid2,.grid2.wide{grid-template-columns:minmax(0,1fr)}
   .fg{grid-template-columns:1fr 1fr}
   .board{grid-template-columns:repeat(5,82vw);scroll-snap-type:x mandatory}
   .col{scroll-snap-align:start}
@@ -294,8 +295,8 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
 const SB_URL='https://sipgrhcxignspvkeqgec.supabase.co';
 const SB_KEY='sb_publishable_kSznWqJh-iaCZC5wCaHYiQ_mSbXwdF4';
 const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos','cuentas'];
-let NO_CUENTAS=false;
+const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos','cuentas','consumos'];
+let NO_CUENTAS=false,NO_CONSUMOS=false;
 
 const ESTADOS=['Pendiente','En curso','En espera','Bloqueado','Cerrado'];
 const EC={'Pendiente':'#8b93a1','En curso':'#4c8dff','En espera':'#e0a43a','Bloqueado':'#e5534b','Cerrado':'#2fb67c'};
@@ -352,6 +353,7 @@ const ICON={
  informes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
  ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
  cuentas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.2"/><path d="M5.5 16c.6-1.8 2-2.7 3.5-2.7s2.9.9 3.5 2.7M15 9h3M15 13h3"/></svg>',
+ consumos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h16v18l-3-2-3 2-2-2-2 2-3-2-3 2z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
  mas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>'
 };
 
@@ -382,7 +384,7 @@ let D={};TABLES.forEach(t=>D[t]=[]);
 let USER=null,lastLoad=0,busyN=0;
 function busy(on){busyN+=on?1:-1;if(busyN<0)busyN=0;const b=$('#busy');b.style.width=busyN?'70%':'100%';if(!busyN)setTimeout(()=>{if(!busyN)b.style.width='0'},300);$('#saved').textContent=busyN?'Guardando…':'Guardado ✓'}
 function fail(e){console.error(e);toast('Error: '+(e&&e.message||e));}
-async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{if(r.error){if(TABLES[i]==='cuentas'){D.cuentas=[];NO_CUENTAS=true;return}throw r.error}if(TABLES[i]==='cuentas')NO_CUENTAS=false;D[TABLES[i]]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
+async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{const t=TABLES[i];if(r.error){if(t==='cuentas'){D.cuentas=[];NO_CUENTAS=true;return}if(t==='consumos'){D.consumos=[];NO_CONSUMOS=true;return}throw r.error}if(t==='cuentas')NO_CUENTAS=false;if(t==='consumos')NO_CONSUMOS=false;D[t]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
 async function ins(t,row){if(t==='pagos'&&NO_CUENTAS)delete row.cuenta_id;busy(1);try{const{data,error}=await sb.from(t).insert(row).select().single();if(error)throw error;D[t].push(data);return data}catch(e){fail(e);return null}finally{busy(0)}}
 async function insMany(t,rows){if(!rows.length)return[];busy(1);try{const{data,error}=await sb.from(t).insert(rows).select();if(error)throw error;D[t].push(...data);return data}catch(e){fail(e);return[]}finally{busy(0)}}
 async function upd(t,id,patch){const o=D[t].find(x=>x.id===id);if(o)Object.assign(o,patch);busy(1);try{const{error}=await sb.from(t).update(patch).eq('id',id);if(error)throw error}catch(e){fail(e);await loadAll();render()}finally{busy(0)}}
@@ -415,7 +417,7 @@ let DF={cat:''};
 let RS={k:'general',p:'',c:false,b:true,sys:false,since:addDays(TODAY(),-7),mes:TODAY().slice(0,7)};
 let DR=null; // {k:'tema'|'pago'|'rec', id}
 let lastReport={html:'',name:''};
-const TITLES={cuentas:'Cuentas / Destinatarios',inicio:'Inicio',temas:'Temas',proyectos:'Proyectos',pagos:'Pagos',agenda:'Agenda',docs:'Documentos',informes:'Informes',ajustes:'Ajustes'};
+const TITLES={consumos:'Consumos · Santander',cuentas:'Cuentas / Destinatarios',inicio:'Inicio',temas:'Temas',proyectos:'Proyectos',pagos:'Pagos',agenda:'Agenda',docs:'Documentos',informes:'Informes',ajustes:'Ajustes'};
 const inEsp=x=>!ESP||x.espacio_id===ESP;
 function setEsp(id){ESP=id;localStorage.setItem('tb_esp',id);render()}
 function go(v){VIEW=v;closeMenu();render();window.scrollTo(0,0)}
@@ -425,6 +427,7 @@ function render(){
   renderNav();renderEsps();
   $('#vt').textContent=TITLES[VIEW];
   $('#main').innerHTML=V[VIEW]();
+  if(VIEW==='ajustes'&&!NO_CONSUMOS)lectorInfo();
   if(VIEW==='informes'){const r=buildReport();lastReport=r;const f=$('#rf');if(f)f.srcdoc=r.html}
   if(DR)renderDrawer();
 }
@@ -437,10 +440,10 @@ function counts(){
 }
 function renderNav(){
   const c=counts();
-  const it=[['inicio','Inicio',''],['temas','Temas',c.tOpen],['proyectos','Proyectos',''],['pagos','Pagos',c.pVenc?`<span class="c alert">${c.pVenc} venc.</span>`:c.pProx||''],['cuentas','Cuentas',D.cuentas.length||''],['agenda','Agenda',c.rHoy?`<span class="c alert">${c.rHoy}</span>`:''],['docs','Documentos',''],['informes','Informes',''],['ajustes','Ajustes','']];
+  const it=[['inicio','Inicio',''],['temas','Temas',c.tOpen],['proyectos','Proyectos',''],['pagos','Pagos',c.pVenc?`<span class="c alert">${c.pVenc} venc.</span>`:c.pProx||''],['cuentas','Cuentas',D.cuentas.length||''],['consumos','Consumos',''],['agenda','Agenda',c.rHoy?`<span class="c alert">${c.rHoy}</span>`:''],['docs','Documentos',''],['informes','Informes',''],['ajustes','Ajustes','']];
   $('#nav').innerHTML=it.map(([k,l,n])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}${String(n).startsWith('<')?n:`<span class="c">${n}</span>`}</a>`).join('');
   const b=[['inicio','Inicio'],['temas','Temas'],['pagos','Pagos'],['agenda','Agenda']];
-  $('#bnav').innerHTML=b.map(([k,l])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}</a>`).join('')+`<a class="${['cuentas','proyectos','docs','informes','ajustes'].includes(VIEW)?'on':''}" onclick="moreMenu()">${ICON.mas}Más</a>`;
+  $('#bnav').innerHTML=b.map(([k,l])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}</a>`).join('')+`<a class="${['cuentas','consumos','proyectos','docs','informes','ajustes'].includes(VIEW)?'on':''}" onclick="moreMenu()">${ICON.mas}Más</a>`;
   $('#sinfo').innerHTML=esc(USER?USER.email:'');
 }
 function renderEsps(){
@@ -448,7 +451,7 @@ function renderEsps(){
   $('#espsD').innerHTML=h;$('#espsM').innerHTML=h;
   const ec=ESP?ecol(ESP):'';$('#top').style.borderBottomColor=ec||'';$('#top').style.boxShadow=ec?`inset 0 -2px 0 ${ec}`:'';
 }
-function moreMenu(){modal(`<h3>Más</h3><div class="menu">${[['cuentas','Cuentas / Destinatarios'],['proyectos','Proyectos'],['docs','Documentos'],['informes','Informes'],['ajustes','Ajustes']].map(([k,l])=>`<button class="btn full" onclick="closeModal();go('${k}')">${ICON[k].replace('<svg','<svg width="16" height="16"')} ${l}</button>`).join('')}</div>`)}
+function moreMenu(){modal(`<h3>Más</h3><div class="menu">${[['cuentas','Cuentas / Destinatarios'],['consumos','Consumos · Santander'],['proyectos','Proyectos'],['docs','Documentos'],['informes','Informes'],['ajustes','Ajustes']].map(([k,l])=>`<button class="btn full" onclick="closeModal();go('${k}')">${ICON[k].replace('<svg','<svg width="16" height="16"')} ${l}</button>`).join('')}</div>`)}
 function closeMenu(){}
 
 const V={};
@@ -681,6 +684,53 @@ async function zipComprobantes(cid){const c=G.cuenta(cid);const ps=pagosDe(cid).
   toast('Preparando '+docs.length+' comprobantes…');busy(1);try{await loadJSZip();const z=new JSZip();const used={};for(const d of docs){const p=G.pago(d.pago_id);const{data,error}=await sb.storage.from('docs').download(d.path);if(error)throw error;let nm=`${pFecha(p)||'sin-fecha'}_${d.nombre}`;if(used[nm])nm=nm.replace(/(\.[^.]+)?$/,'_'+(++used[nm])+'$1');else used[nm]=1;z.file(nm,data)}
   download(await z.generateAsync({type:'blob'}),`Comprobantes_${slug(c.nombre)}_${CF.anio}.zip`)}catch(e){fail(e)}finally{busy(0)}}
 
+/* ---------- Consumos (avisos Santander) ---------- */
+let CQ={mes:TODAY().slice(0,7),tipo:'',tarjeta:''};
+const CTIPOS=[['','Todos'],['credito','Tarjeta de crédito'],['debito','Débito'],['transferencia','Transferencias'],['otro','Otros']];
+const CTL={credito:'Crédito',debito:'Débito',transferencia:'Transferencia',otro:'Otro'};
+const CTC={credito:'#4c8dff',debito:'#2bb7c4',transferencia:'#b07cff',otro:'#8b93a1'};
+function tarjKey(c){return (c.tarjeta||CTL[c.tipo]||'Otro')+(c.ultimos4?' ···'+c.ultimos4:'')}
+function sumMon(arr){const t={};arr.forEach(c=>{if(+c.monto)t[c.moneda||'ARS']=(t[c.moneda||'ARS']||0)+(+c.monto)});return Object.keys(t).map(k=>money(t[k],k)).join(' + ')||'—'}
+function consumosFiltrados(sinTipo){let L=D.consumos.filter(c=>(!CQ.mes||(c.fecha||'').startsWith(CQ.mes))&&matchQ(norm([c.comercio,c.comercio_detalle,c.tarjeta,c.categoria,c.notas,c.asunto].join(' '))));
+  if(CQ.tarjeta)L=L.filter(c=>tarjKey(c)===CQ.tarjeta);if(!sinTipo&&CQ.tipo)L=L.filter(c=>c.tipo===CQ.tipo);
+  return L.sort((a,b)=>((b.fecha||'')+(b.hora||''))>((a.fecha||'')+(a.hora||''))?1:-1)}
+V.consumos=()=>{
+  if(NO_CONSUMOS)return `<div class="empty">La sección de consumos todavía no está activada en la base de datos.</div>`;
+  if(!D.consumos.length)return `<div class="empty" style="text-align:left;line-height:1.7"><b style="color:var(--tx)">Todavía no hay consumos.</b><br>Se cargan solos desde los avisos de Santander que te llegan al mail, una vez instalado el lector (Ajustes → Lector de mails Santander).</div>`;
+  const base=consumosFiltrados(true),L=consumosFiltrados(false);
+  const tarjetas=[...new Set(D.consumos.map(tarjKey))].sort();
+  const meses=[...new Set(D.consumos.map(c=>(c.fecha||'').slice(0,7)).filter(Boolean))].sort().reverse();
+  if(CQ.mes&&!meses.includes(CQ.mes)&&meses.length&&CQ.mes!==TODAY().slice(0,7))CQ.mes=meses[0];
+  const seg=`<div class="seg" style="flex-wrap:wrap">${CTIPOS.map(([k,l])=>{const n=k?base.filter(c=>c.tipo===k).length:base.length;return (k&&!n)?'':`<button class="${CQ.tipo===k?'on':''}" onclick="CQ.tipo='${k}';render()">${l} <span class="mu2">${n}</span></button>`}).join('')}</div>`;
+  const fl=`<div class="filters"><select onchange="CQ.mes=this.value;render()"><option value="">Todos los meses</option>${[...new Set([TODAY().slice(0,7),...meses])].sort().reverse().map(m=>`<option value="${m}" ${CQ.mes===m?'selected':''}>${MESL[+m.slice(5)-1]} ${m.slice(0,4)}</option>`).join('')}</select><select onchange="CQ.tarjeta=this.value;render()"><option value="">Todas las tarjetas / cuentas</option>${tarjetas.map(t=>`<option ${CQ.tarjeta===t?'selected':''}>${esc(t)}</option>`).join('')}</select>${seg}<div class="sp"></div><button class="btn sm" onclick="exportConsumosCSV()">⤓ Excel / CSV</button></div>`;
+  // resumen por tarjeta
+  const porT={};L.forEach(c=>(porT[tarjKey(c)]=porT[tarjKey(c)]||[]).push(c));
+  const tcards=`<div class="sum">${`<div class="kpi"><div class="l">Total ${CQ.mes?MESL[+CQ.mes.slice(5)-1].toLowerCase():'período'}</div><div class="v" style="font-size:20px">${sumMon(L)}</div><div class="s">${L.length} movimiento${L.length===1?'':'s'}</div></div>`}${Object.keys(porT).sort((a,b)=>porT[b].length-porT[a].length).slice(0,4).map(k=>{const t=porT[k][0].tipo;return `<div class="kpi" style="border-top:3px solid ${CTC[t]};cursor:pointer" onclick="CQ.tarjeta=CQ.tarjeta===${JSON.stringify(k).replace(/"/g,'&quot;')}?'':${JSON.stringify(k).replace(/"/g,'&quot;')};render()"><div class="l">${esc(k)}</div><div class="v" style="font-size:18px">${sumMon(porT[k])}</div><div class="s">${porT[k].length} mov.</div></div>`}).join('')}</div>`;
+  // top comercios
+  const porC={};L.forEach(c=>{const k=c.comercio||'(sin comercio)';(porC[k]=porC[k]||[]).push(c)});
+  const top=Object.keys(porC).sort((a,b)=>porC[b].reduce((s,c)=>s+(+c.monto||0),0)-porC[a].reduce((s,c)=>s+(+c.monto||0),0)).slice(0,6);
+  // lista por día
+  const porD={};L.forEach(c=>(porD[c.fecha||'']=porD[c.fecha||'']||[]).push(c));
+  const lista=Object.keys(porD).sort().reverse().map(d=>`<div class="li" style="cursor:default;min-height:34px;background:var(--p2)"><div class="t"><b style="font-size:12.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px">${d?new Date(d+'T12:00:00').toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'}):'Sin fecha'}</b></div><span class="amt mu" style="font-size:12.5px">${sumMon(porD[d])}</span></div>${porD[d].map(c=>`<div class="li" style="box-shadow:inset 3px 0 0 ${CTC[c.tipo]||'#888'}" onclick="editConsumo('${c.id}')"><span class="mu2 num" style="width:40px;font-size:12px">${c.hora?c.hora.slice(0,5):''}</span><div class="t"><b>${esc(c.comercio||c.asunto||'Movimiento')}</b><span>${[tarjKey(c),c.cuotas>1?c.cuotas+' cuotas':'',c.comercio_detalle,c.notas].filter(Boolean).map(esc).join(' · ')}</span></div>${c.categoria?`<span class="pill hm" style="color:var(--mu);border-color:var(--bd2)">${esc(c.categoria)}</span>`:''}<span class="amt">${money(c.monto,c.moneda)}</span></div>`).join('')}`).join('');
+  return fl+tcards+`<div class="grid2 wide"><div>${L.length?`<div class="list">${lista}</div>`:'<div class="empty">Sin movimientos con estos filtros.</div>'}</div><div><div class="sec" style="margin-top:0"><h2>Dónde más gastaste</h2>${top.length?`<div class="list">${top.map(k=>`<div class="li" onclick="$('#q').value='${esc(k).replace(/'/g,'')}';Q=$('#q').value;render()"><div class="t"><b>${esc(k)}</b><span>${porC[k].length} movimiento${porC[k].length>1?'s':''}</span></div><span class="amt">${sumMon(porC[k])}</span></div>`).join('')}</div>`:'<div class="empty">—</div>'}</div></div></div>`;
+};
+function editConsumo(id){const c=D.consumos.find(x=>x.id===id);const cats=[...new Set(['Supermercado','Transporte','Comida','Servicios','Salud','Ropa','Hogar','Suscripciones','Viajes','Otros',...D.consumos.map(x=>x.categoria).filter(Boolean)])];
+  modal(`<h3>${esc(c.comercio||'Movimiento')}</h3><div class="mu" style="margin-bottom:12px">${money(c.monto,c.moneda)} · ${fd(c.fecha)} ${c.hora?c.hora.slice(0,5):''} · ${esc(tarjKey(c))}${c.cuotas>1?' · '+c.cuotas+' cuotas':''}</div>
+  <div class="f"><label>Comercio</label><input id="kc" value="${esc(c.comercio)}"></div>
+  <div class="f"><label>Categoría</label><input id="kca" list="kcats" value="${esc(c.categoria)}" placeholder="Ej. Transporte"><datalist id="kcats">${cats.map(x=>`<option value="${esc(x)}">`).join('')}</datalist></div>
+  <label class="ck2"><input type="checkbox" id="kall" checked> Aplicar la categoría a todos los movimientos de este comercio</label>
+  <div class="f"><label>Notas</label><input id="kn" value="${esc(c.notas)}"></div>
+  <div class="mu2" style="font-size:12px">Aviso original: ${esc(c.asunto)}</div>
+  <div class="mf"><button class="btn danger" style="margin-right:auto" onclick="confirmBox('¿Eliminar este movimiento del tablero? (el mail no se toca)','Eliminar',async()=>{await del('consumos','${id}');render()})">Eliminar</button><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="saveConsumo('${id}')">Guardar</button></div>`)}
+async function saveConsumo(id){const c=D.consumos.find(x=>x.id===id);const cat=$('#kca').value.trim(),com=$('#kc').value.trim(),all=$('#kall').checked;const orig=c.comercio;
+  await upd('consumos',id,{comercio:com,categoria:cat,notas:$('#kn').value.trim()});
+  if(all&&cat)for(const x of D.consumos.filter(x=>x.id!==id&&norm(x.comercio)===norm(orig)&&x.categoria!==cat))await upd('consumos',x.id,{categoria:cat});
+  closeModal();render();toast('Guardado')}
+function exportConsumosCSV(){const rows=[['Fecha','Hora','Tipo','Tarjeta / cuenta','Comercio','Detalle','Cuotas','Moneda','Monto','Categoría','Notas']];consumosFiltrados(false).slice().reverse().forEach(c=>rows.push([fd(c.fecha),c.hora?c.hora.slice(0,5):'',CTL[c.tipo]||c.tipo,tarjKey(c),c.comercio,c.comercio_detalle,c.cuotas||'',c.moneda,String(c.monto).replace('.',','),c.categoria,c.notas]));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Consumos_'+(CQ.mes||'todos')+'.csv')}
+async function lectorClave(regen){const{data,error}=await sb.rpc('get_ingest_token',{regenerar:!!regen});if(error){fail(error);return}
+  modal(`<h3>Clave del lector de mails</h3><div class="mu" style="font-size:13px;line-height:1.5;margin-bottom:10px">Copiala y pegala en el Apps Script de tu Gmail, en <b>Propiedades del script</b>, con el nombre <b>TOKEN</b>. Solo sirve para cargar consumos en el tablero; no da acceso a nada más.</div><div style="display:flex;gap:6px"><input id="lk" readonly value="${esc(data)}" style="flex:1;font-family:monospace;font-size:12px"><button class="btn" onclick="copyTxt($('#lk').value)">Copiar</button></div><div class="mf"><button class="btn danger" style="margin-right:auto" onclick="confirmBox('Si generás una clave nueva, la anterior deja de funcionar y tenés que actualizarla en el Apps Script. ¿Seguir?','Generar nueva',()=>lectorClave(true))">Generar nueva</button><button class="btn" onclick="closeModal()">Cerrar</button></div>`)}
+async function lectorInfo(){try{const{data}=await sb.rpc('lector_estado');const e=$('#lectorEst');if(e)e.innerHTML=data?`Última lectura: <b style="color:var(--tx)">${fdt(data)}</b>`:'Todavía no se conectó ningún lector.'}catch(e){}}
+
 /* ---------- Agenda ---------- */
 V.agenda=()=>{
   const [y,m]=CAL.m.split('-').map(Number);const first=new Date(y,m-1,1);const start=new Date(first);start.setDate(1-((first.getDay()+6)%7));
@@ -696,7 +746,7 @@ V.agenda=()=>{
   const px=`<div class="sec"><h2>Próximos 30 días</h2>${prox.length?`<div class="list">${prox.map(itemRow).join('')}</div>`:'<div class="empty">Sin vencimientos ni recordatorios.</div>'}</div>`;
   const pr=projections({});const byM={};pr.forEach(i=>{const k=i.fecha.slice(0,7);(byM[k]=byM[k]||[]).push(i)});
   const pv=`<div class="sec"><h2>Previstos · próximos ${PROY} meses</h2>${pr.length?`<div class="list">${Object.keys(byM).sort().map(k=>{const its=byM[k];const t={};its.forEach(i=>{const p=G.pago(i.id);if(p)t[p.moneda]=(t[p.moneda]||0)+(+p.monto||0)});return `<div class="li" onclick="CAL.m='${k}';CAL.sel='${k}-01';render();window.scrollTo(0,0)"><div class="t"><b>${MESL[+k.slice(5)-1]} ${k.slice(0,4)}</b><span>${its.length} vencimiento${its.length>1?'s':''} · ${esc(its.map(i=>i.titulo).slice(0,3).join(', '))}${its.length>3?'…':''}</span></div><span class="amt">${Object.keys(t).map(m=>money(t[m],m)).join(' + ')}</span></div>`}).join('')}</div>`:'<div class="empty">Sin pagos recurrentes cargados.</div>'}</div>`;
-  return head+`<div class="grid2" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)"><div>${cal}</div><div>${day}${px}${pv}</div></div>`;
+  return head+`<div class="grid2 wide"><div>${cal}</div><div>${day}${px}${pv}</div></div>`;
 };
 function calMove(n){const[y,m]=CAL.m.split('-').map(Number);const d=new Date(y,m-1+n,1);CAL.m=localISO(d).slice(0,7);render()}
 async function recDone(id){const r=G.rec(id);await upd('recordatorios',id,{hecho:!r.hecho});if(r.tema_id&&!r.hecho)await logT(r.tema_id,'Recordatorio cumplido: '+r.titulo);render();toast(r.hecho?'Marcado como hecho':'Reabierto')}
@@ -812,6 +862,7 @@ V.ajustes=()=>{
   return `<div class="grid2"><div><div class="sec" style="margin-top:0"><h2>Espacios <span class="r"><button class="btn sm pri" onclick="editEsp()">+ Espacio</button></span></h2><div class="list">${e.map(x=>{const n=D.temas.filter(t=>t.espacio_id===x.id).length+D.pagos.filter(p=>p.espacio_id===x.id).length;return `<div class="li" onclick="editEsp('${x.id}')"><span class="dot" style="background:${x.color};width:12px;height:12px"></span><div class="t"><b>${esc(x.nombre)}</b><span>${D.proyectos.filter(p=>p.espacio_id===x.id).length} proyectos · ${n} registros</span></div><span class="mu2">Editar</span></div>`}).join('')||'<div class="li mu">Sin espacios</div>'}</div></div>
    <div class="sec"><h2>Respaldo</h2><div class="pc"><div class="mu" style="font-size:13px;line-height:1.5;margin-bottom:10px">Los datos ya viven en tu base de Supabase. Igual conviene bajar un respaldo cada tanto: es un archivo con todos los registros (los archivos adjuntos se descargan desde Documentos).</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportJSON()">⤓ Respaldo completo (JSON)</button><button class="btn" onclick="exportTemasCSV()">⤓ Temas CSV</button><button class="btn" onclick="exportPagosCSV(D.pagos)">⤓ Pagos CSV</button></div></div></div></div>
    <div><div class="sec" style="margin-top:0"><h2>Cuenta</h2><div class="pc"><div class="mu" style="font-size:13px">Sesión iniciada como</div><div style="font-weight:600;margin:3px 0 12px">${esc(USER.email)}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="chgPass()">Cambiar contraseña</button><button class="btn" onclick="reloadAll()">↻ Recargar datos</button><button class="btn danger" onclick="logout()">Cerrar sesión</button></div></div></div>
+   <div class="sec"><h2>Lector de mails Santander</h2><div class="pc mu" style="font-size:13px;line-height:1.6">Lee los avisos de Santander de tu Gmail y los carga en <b style="color:var(--tx)">Consumos</b>.<div id="lectorEst" style="margin:8px 0">…</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="lectorClave()">Mostrar clave</button><button class="btn" onclick="go('consumos')">Ver consumos</button></div></div></div>
    <div class="sec"><h2>En el celular</h2><div class="pc mu" style="font-size:13px;line-height:1.6"><b style="color:var(--tx)">Android (Chrome):</b> menú ⋮ → <i>Agregar a la pantalla principal</i> / <i>Instalar app</i>.<br><b style="color:var(--tx)">iPhone (Safari):</b> botón compartir → <i>Agregar a inicio</i>.<br>Queda como una app, con tu sesión iniciada.</div></div></div></div>`;
 };
 function editEsp(id){const e=id?G.esp(id):null;window._ec=e?e.color:ECOLORS[D.espacios.length%ECOLORS.length];
