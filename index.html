@@ -295,8 +295,8 @@ tr.rw{cursor:pointer}tr.rw:hover td{background:var(--p2)}
 const SB_URL='https://sipgrhcxignspvkeqgec.supabase.co';
 const SB_KEY='sb_publishable_kSznWqJh-iaCZC5wCaHYiQ_mSbXwdF4';
 const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos','cuentas','consumos','mail_eventos'];
-let NO_CUENTAS=false,NO_CONSUMOS=false,NO_EVENTOS=false;
+const TABLES=['espacios','proyectos','temas','pendientes','bitacora','pagos','recordatorios','documentos','cuentas','consumos','mail_eventos','mails'];
+let NO_CUENTAS=false,NO_CONSUMOS=false,NO_EVENTOS=false,NO_MAILS=false;
 
 const ESTADOS=['Pendiente','En curso','En espera','Bloqueado','Cerrado'];
 const EC={'Pendiente':'#8b93a1','En curso':'#4c8dff','En espera':'#e0a43a','Bloqueado':'#e5534b','Cerrado':'#2fb67c'};
@@ -344,6 +344,7 @@ function pill(e){const c=EC[e]||'#888';return `<span class="pill" style="color:$
 function ppill(p){const st=pagoSt(p);const c={pagado:'#2fb67c',vencido:'#e5534b',pendiente:'#e0a43a',cancelado:'#8b93a1'}[st];const l={pagado:'Pagado',vencido:'Vencido',pendiente:'A pagar',cancelado:'Cancelado'}[st];return `<span class="pill" style="color:${c};border-color:${c}55;background:${c}17">${l}</span>`}
 function prio(p){return `<span style="display:inline-flex;align-items:center;gap:6px"><span class="dot" style="background:${PC[p]||'#888'}"></span>${esc(p||'—')}</span>`}
 const ICON={
+ mails:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
  inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
  temas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
  proyectos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
@@ -384,7 +385,7 @@ let D={};TABLES.forEach(t=>D[t]=[]);
 let USER=null,lastLoad=0,busyN=0;
 function busy(on){busyN+=on?1:-1;if(busyN<0)busyN=0;const b=$('#busy');b.style.width=busyN?'70%':'100%';if(!busyN)setTimeout(()=>{if(!busyN)b.style.width='0'},300);$('#saved').textContent=busyN?'Guardando…':'Guardado ✓'}
 function fail(e){console.error(e);toast('Error: '+(e&&e.message||e));}
-async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{const t=TABLES[i];if(r.error){if(t==='cuentas'){D.cuentas=[];NO_CUENTAS=true;return}if(t==='consumos'){D.consumos=[];NO_CONSUMOS=true;return}if(t==='mail_eventos'){D.mail_eventos=[];NO_EVENTOS=true;return}throw r.error}if(t==='cuentas')NO_CUENTAS=false;if(t==='consumos')NO_CONSUMOS=false;if(t==='mail_eventos')NO_EVENTOS=false;D[t]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
+async function loadAll(){busy(1);try{const rs=await Promise.all(TABLES.map(t=>sb.from(t).select('*')));rs.forEach((r,i)=>{const t=TABLES[i];if(r.error){if(t==='cuentas'){D.cuentas=[];NO_CUENTAS=true;return}if(t==='consumos'){D.consumos=[];NO_CONSUMOS=true;return}if(t==='mail_eventos'){D.mail_eventos=[];NO_EVENTOS=true;return}if(t==='mails'){D.mails=[];NO_MAILS=true;return}throw r.error}if(t==='mails')NO_MAILS=false;if(t==='cuentas')NO_CUENTAS=false;if(t==='consumos')NO_CONSUMOS=false;if(t==='mail_eventos')NO_EVENTOS=false;D[t]=r.data||[]});lastLoad=Date.now()}catch(e){fail(e)}finally{busy(0)}}
 async function ins(t,row){if(t==='pagos'&&NO_CUENTAS)delete row.cuenta_id;busy(1);try{const{data,error}=await sb.from(t).insert(row).select().single();if(error)throw error;D[t].push(data);return data}catch(e){fail(e);return null}finally{busy(0)}}
 async function insMany(t,rows){if(!rows.length)return[];busy(1);try{const{data,error}=await sb.from(t).insert(rows).select();if(error)throw error;D[t].push(...data);return data}catch(e){fail(e);return[]}finally{busy(0)}}
 async function upd(t,id,patch){const o=D[t].find(x=>x.id===id);if(o)Object.assign(o,patch);busy(1);try{const{error}=await sb.from(t).update(patch).eq('id',id);if(error)throw error}catch(e){fail(e);await loadAll();render()}finally{busy(0)}}
@@ -417,7 +418,7 @@ let DF={cat:''};
 let RS={k:'general',p:'',c:false,b:true,sys:false,since:addDays(TODAY(),-7),mes:TODAY().slice(0,7)};
 let DR=null; // {k:'tema'|'pago'|'rec', id}
 let lastReport={html:'',name:''};
-const TITLES={consumos:'Consumos · Santander',cuentas:'Cuentas / Destinatarios',inicio:'Inicio',temas:'Temas',proyectos:'Proyectos',pagos:'Pagos',agenda:'Agenda',docs:'Documentos',informes:'Informes',ajustes:'Ajustes'};
+const TITLES={mails:'Mails',consumos:'Consumos · Santander',cuentas:'Cuentas / Destinatarios',inicio:'Inicio',temas:'Temas',proyectos:'Proyectos',pagos:'Pagos',agenda:'Agenda',docs:'Documentos',informes:'Informes',ajustes:'Ajustes'};
 const inEsp=x=>!ESP||x.espacio_id===ESP;
 function setEsp(id){ESP=id;localStorage.setItem('tb_esp',id);render()}
 function go(v){VIEW=v;closeMenu();render();window.scrollTo(0,0)}
@@ -440,10 +441,10 @@ function counts(){
 }
 function renderNav(){
   const c=counts();
-  const it=[['inicio','Inicio',''],['temas','Temas',c.tOpen],['proyectos','Proyectos',''],['pagos','Pagos',c.pVenc?`<span class="c alert">${c.pVenc} venc.</span>`:c.pProx||''],['cuentas','Cuentas',D.cuentas.length||''],['consumos','Consumos',''],['agenda','Agenda',c.rHoy?`<span class="c alert">${c.rHoy}</span>`:''],['docs','Documentos',''],['informes','Informes',''],['ajustes','Ajustes','']];
+  const it=[['inicio','Inicio',''],['temas','Temas',c.tOpen],['proyectos','Proyectos',''],['pagos','Pagos',c.pVenc?`<span class="c alert">${c.pVenc} venc.</span>`:c.pProx||''],['cuentas','Cuentas',D.cuentas.length||''],['consumos','Consumos',''],['mails','Mails',(()=>{const n=D.mails.filter(m=>!m.leido&&!m.enviado).length;return n?`<span class="c" style="color:var(--ac);font-weight:600">${n} nuevo${n>1?'s':''}</span>`:''})()],['agenda','Agenda',c.rHoy?`<span class="c alert">${c.rHoy}</span>`:''],['docs','Documentos',''],['informes','Informes',''],['ajustes','Ajustes','']];
   $('#nav').innerHTML=it.map(([k,l,n])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}${String(n).startsWith('<')?n:`<span class="c">${n}</span>`}</a>`).join('');
   const b=[['inicio','Inicio'],['temas','Temas'],['pagos','Pagos'],['agenda','Agenda']];
-  $('#bnav').innerHTML=b.map(([k,l])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}</a>`).join('')+`<a class="${['cuentas','consumos','proyectos','docs','informes','ajustes'].includes(VIEW)?'on':''}" onclick="moreMenu()">${ICON.mas}Más</a>`;
+  $('#bnav').innerHTML=b.map(([k,l])=>`<a class="${VIEW===k?'on':''}" onclick="go('${k}')">${ICON[k]}${l}</a>`).join('')+`<a class="${['cuentas','consumos','mails','proyectos','docs','informes','ajustes'].includes(VIEW)?'on':''}" onclick="moreMenu()">${ICON.mas}Más</a>`;
   $('#sinfo').innerHTML=esc(USER?USER.email:'');
 }
 function renderEsps(){
@@ -451,7 +452,7 @@ function renderEsps(){
   $('#espsD').innerHTML=h;$('#espsM').innerHTML=h;
   const ec=ESP?ecol(ESP):'';$('#top').style.borderBottomColor=ec||'';$('#top').style.boxShadow=ec?`inset 0 -2px 0 ${ec}`:'';
 }
-function moreMenu(){modal(`<h3>Más</h3><div class="menu">${[['cuentas','Cuentas / Destinatarios'],['consumos','Consumos · Santander'],['proyectos','Proyectos'],['docs','Documentos'],['informes','Informes'],['ajustes','Ajustes']].map(([k,l])=>`<button class="btn full" onclick="closeModal();go('${k}')">${ICON[k].replace('<svg','<svg width="16" height="16"')} ${l}</button>`).join('')}</div>`)}
+function moreMenu(){modal(`<h3>Más</h3><div class="menu">${[['cuentas','Cuentas / Destinatarios'],['consumos','Consumos · Santander'],['mails','Mails'],['proyectos','Proyectos'],['docs','Documentos'],['informes','Informes'],['ajustes','Ajustes']].map(([k,l])=>`<button class="btn full" onclick="closeModal();go('${k}')">${ICON[k].replace('<svg','<svg width="16" height="16"')} ${l}</button>`).join('')}</div>`)}
 function closeMenu(){}
 
 const V={};
@@ -501,8 +502,26 @@ V.inicio=()=>{
   const acts=D.bitacora.filter(b=>b.tipo==='usr'&&(()=>{const t=G.tema(b.tema_id);return t&&inEsp(t)})()).sort((a,b)=>a.fecha<b.fecha?1:-1).slice(0,8);
   const ac=`<div class="sec"><h2>Últimos avances</h2>${acts.length?`<div class="list">${acts.map(b=>{const t=G.tema(b.tema_id);return `<div class="li" onclick="openDr('tema','${t.id}')"><div class="t"><b>${esc(t.titulo)}</b><span>${esc(b.texto)}</span></div><span class="mu2" style="font-size:12px">${fd(b.fecha)}</span></div>`}).join('')}</div>`:'<div class="empty">Todavía no registraste avances.</div>'}</div>`;
   const empty=!D.temas.length&&!D.pagos.length&&!D.recordatorios.length?`<div class="sec"><div class="empty" style="text-align:left;line-height:1.7"><b style="color:var(--tx)">Tablero vacío, listo para usar.</b><br>Arriba elegís el espacio (Ceta, EFM, Personal o los que crees en Ajustes). Con <b>+ Nuevo</b> cargás un tema, un pago, un recordatorio o un documento.</div></div>`:'';
-  return espCards()+k+empty+`<div class="grid2"><div>${ag}</div><div>${at}${ac}</div></div>`;
+  return espCards()+k+empty+inicioConsumos()+`<div class="grid2"><div>${ag}</div><div>${inicioMails()}${at}${ac}</div></div>`;
 };
+function inicioConsumos(){if(NO_CONSUMOS||!D.consumos.length||(ESP&&norm((G.esp(ESP)||{}).nombre)!=='personal'))return '';
+  const mes=TODAY().slice(0,7),mt=MESL[+mes.slice(5)-1].toLowerCase();const scope=D.consumos.filter(c=>c.tipo!=='compra');
+  const delMes=scope.filter(c=>!isRech(c)&&(c.fecha||'').startsWith(mes));
+  const it=[...delMes.filter(c=>!enCuotas(c)).map(c=>({c,v:+c.monto||0})),...cuotasDelMes(mes,scope).map(q=>({c:q.c,v:q.monto}))];
+  const porT={};it.forEach(x=>{const k=x.c.tipo==='credito'?tarjKey(x.c):CTL[x.c.tipo]||'Otro';const m=x.c.moneda||'ARS';porT[k]=porT[k]||{t:x.c.tipo,s:{}};porT[k].s[m]=(porT[k].s[m]||0)+x.v});
+  const porC={};it.forEach(x=>{if(x.c.moneda==='USD')return;const k=x.c.comercio||'(sin comercio)';porC[k]=(porC[k]||0)+x.v});
+  const top=Object.keys(porC).sort((a,b)=>porC[b]-porC[a]).slice(0,5);
+  const go2=k=>`CQ.mes='${mes}';CQ.tipo='';CQ.tarjeta='';go('consumos');setTimeout(()=>detKPI('${k}'),60)`;
+  return `<div class="sec"><h2>Consumos de ${mt} <span class="r"><button class="btn sm" onclick="CQ.mes='${mes}';CQ.tipo='';CQ.tarjeta='';go('consumos')">Ver consumos →</button></span></h2>
+  <div class="sum"><div class="kpi" style="border-top:3px solid var(--ok);cursor:pointer" onclick="${go2('flujo')}"><div class="l">Flujo del mes ›</div><div class="v" style="font-size:20px">${fmtT(flujoMes(mes,scope))}</div><div class="s">contado + cuotas que caen en ${mt}</div></div>
+  <div class="kpi" style="cursor:pointer" onclick="${go2('compras')}"><div class="l">Compras del mes (total) ›</div><div class="v" style="font-size:18px">${sumMon(delMes)}</div><div class="s">${delMes.length} movimientos · valor completo</div></div>
+  <div class="kpi" style="border-top:3px solid var(--wa);cursor:pointer" onclick="${go2('deuda')}"><div class="l">Deuda en cuotas a futuro ›</div><div class="v" style="font-size:18px">${fmtT(saldoCuotas(mes,scope))}</div><div class="s">después de ${mt}</div></div></div>
+  <div class="grid2"><div class="list">${Object.keys(porT).sort((a,b)=>(porT[b].s.ARS||0)-(porT[a].s.ARS||0)).map(k=>`<div class="li" style="box-shadow:inset 3px 0 0 ${CTC[porT[k].t]||'#888'}" onclick="CQ.mes='${mes}';CQ.tipo='';CQ.tarjeta=${JSON.stringify(k).replace(/"/g,'&quot;')};go('consumos')"><div class="t"><b>${esc(k)}</b><span>flujo del mes</span></div><span class="amt">${fmtT(porT[k].s)}</span></div>`).join('')||'<div class="empty">Sin consumos este mes.</div>'}</div>
+  <div class="list">${top.map(k=>`<div class="li" onclick="CQ.mes='${mes}';CQ.tipo='';CQ.tarjeta='';go('consumos');setTimeout(()=>{$('#q').value=${JSON.stringify(k).replace(/"/g,'&quot;')};Q=$('#q').value;render()},60)"><div class="t"><b>${esc(k)}</b><span>top comercio del mes</span></div><span class="amt">${money(porC[k],'ARS')}</span></div>`).join('')||'<div class="empty">—</div>'}</div></div></div>`}
+function inicioMails(){if(NO_MAILS||!D.mails.length||(ESP&&norm((G.esp(ESP)||{}).nombre)!=='personal'))return '';
+  const carps=[...new Set(D.mails.map(m=>m.carpeta).filter(Boolean))].sort();
+  return carps.map(c=>{const L=D.mails.filter(m=>m.carpeta===c&&!m.enviado).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);const nl=L.filter(m=>!m.leido).length;
+    return `<div class="sec"><h2>Mails · ${esc(c)} ${nl?`<span class="pill" style="color:var(--ac);border-color:var(--ac);margin-left:6px">${nl} sin leer</span>`:''}<span class="r"><button class="btn sm" onclick="MQ.carpeta=${JSON.stringify(c).replace(/"/g,'&quot;')};MQ.mes='';go('mails')">Ver todos →</button></span></h2>${L.length?`<div class="list">${L.slice(0,4).map(mailRow).join('')}</div>`:'<div class="empty">Sin mails recibidos.</div>'}</div>`}).join('')}
 function espCards(){
   if(ESP){const e=G.esp(ESP);return e?`<div class="ebanner" style="--ec:${e.color}"><span class="dot" style="background:${e.color};width:10px;height:10px"></span>Estás viendo <b>${esc(e.nombre)}</b><div class="sp"></div><button class="btn sm" onclick="setEsp('')">Ver todos los espacios</button></div>`:''}
   return `<div class="ecards">${espsSorted().map(e=>{const t=D.temas.filter(x=>x.espacio_id===e.id&&isOpen(x));const ap=D.pagos.filter(p=>p.espacio_id===e.id&&['pendiente','vencido'].includes(pagoSt(p)));const v=ap.filter(p=>pagoSt(p)==='vencido');const p30=ap.filter(p=>p.vencimiento&&daysTo(p.vencimiento)<=30);const r=D.recordatorios.filter(x=>x.espacio_id===e.id&&!x.hecho&&x.fecha<=addDays(TODAY(),7));
@@ -770,6 +789,42 @@ async function lectorClave(regen){const{data,error}=await sb.rpc('get_ingest_tok
   modal(`<h3>Clave del bot de mails</h3><div class="mu" style="font-size:13px;line-height:1.5;margin-bottom:10px">Copiala y pegala en el Apps Script de tu Gmail, en <b>Propiedades del script</b>, con el nombre <b>TOKEN</b>. Solo sirve para que el bot cargue consumos en el tablero; no da acceso a nada más.</div><div style="display:flex;gap:6px"><input id="lk" readonly value="${esc(data)}" style="flex:1;font-family:monospace;font-size:12px"><button class="btn" onclick="copyTxt($('#lk').value)">Copiar</button></div><div class="mf"><button class="btn danger" style="margin-right:auto" onclick="confirmBox('Si generás una clave nueva, la anterior deja de funcionar y tenés que actualizarla en el Apps Script. ¿Seguir?','Generar nueva',()=>lectorClave(true))">Generar nueva</button><button class="btn" onclick="closeModal()">Cerrar</button></div>`)}
 async function lectorInfo(){try{const{data}=await sb.rpc('lector_estado');const e=$('#lectorEst');if(e)e.innerHTML=data?`Última lectura: <b style="color:var(--tx)">${fdt(data)}</b>`:'Todavía no se conectó ningún lector.'}catch(e){}}
 
+/* ---------- Mails seguidos (bot) ---------- */
+let MQ={carpeta:'',mes:''};
+const mailNombre=d=>{const m=(d||'').match(/^\s*"?([^"<]+?)"?\s*</);return m?m[1].trim():(d||'').replace(/[<>]/g,'')};
+const mFecha=m=>(m.fecha||'').slice(0,10);
+V.mails=()=>{
+  if(NO_MAILS)return `<div class="empty">La sección de mails todavía no está activada en la base de datos.</div>`;
+  const carps=[...new Set(D.mails.map(m=>m.carpeta).filter(Boolean))].sort();
+  if(!carps.length)return `<div class="empty" style="text-align:left;line-height:1.7"><b style="color:var(--tx)">Todavía no hay mails.</b><br>El bot de tu Gmail trae acá, con su detalle, los mails de las etiquetas que sigue.</div>`;
+  if(!carps.includes(MQ.carpeta))MQ.carpeta=carps[0];
+  const all=D.mails.filter(m=>m.carpeta===MQ.carpeta);
+  const meses=[...new Set(all.map(m=>mFecha(m).slice(0,7)).filter(Boolean))].sort().reverse();
+  const L=all.filter(m=>(!MQ.mes||mFecha(m).startsWith(MQ.mes))&&matchQ(norm([m.asunto,m.resumen,m.adjuntos,m.nota,m.de].join(' ')))).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
+  const nl=all.filter(m=>!m.leido&&!m.enviado).length;const conMonto=all.filter(m=>+m.monto&&!m.enviado);
+  const seg=carps.length>1?`<div class="seg">${carps.map(c=>`<button class="${MQ.carpeta===c?'on':''}" onclick="MQ.carpeta=${JSON.stringify(c).replace(/"/g,'&quot;')};MQ.mes='';render()">${esc(c)} <span class="mu2">${D.mails.filter(m=>m.carpeta===c).length}</span></button>`).join('')}</div>`:'';
+  const fl=`<div class="filters">${seg}<select onchange="MQ.mes=this.value;render()"><option value="">Todos los meses</option>${meses.map(m=>`<option value="${m}" ${MQ.mes===m?'selected':''}>${MESL[+m.slice(5)-1]} ${m.slice(0,4)}</option>`).join('')}</select><div class="sp"></div>${nl?`<button class="btn sm" onclick="mailsLeidos()">Marcar todo como leído</button>`:''}<button class="btn sm" onclick="exportMailsCSV()">⤓ Excel / CSV</button></div>`;
+  const ult=all.filter(m=>!m.enviado).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1)[0];
+  const k=`<div class="sum"><div class="kpi"><div class="l">${esc(MQ.carpeta)}</div><div class="v" style="font-size:20px">${all.length}</div><div class="s">mails${nl?` · <b style="color:var(--ac)">${nl} sin leer</b>`:''}</div></div><div class="kpi"><div class="l">Último recibido</div><div class="v" style="font-size:16px">${ult?fd(mFecha(ult)):'—'}</div><div class="s" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ult?esc(ult.asunto):''}</div></div><div class="kpi"><div class="l">Con importe</div><div class="v" style="font-size:20px">${conMonto.length}</div><div class="s">${conMonto.filter(m=>m.pago_id).length} registrados como pago</div></div></div>`;
+  const porM={};L.forEach(m=>(porM[mFecha(m).slice(0,7)]=porM[mFecha(m).slice(0,7)]||[]).push(m));
+  const lista=Object.keys(porM).sort().reverse().map(mm=>`<div class="li" style="cursor:default;min-height:34px;background:var(--p2)"><div class="t"><b style="font-size:12.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px">${mm?MESL[+mm.slice(5)-1]+' '+mm.slice(0,4):'Sin fecha'}</b></div><span class="mu2" style="font-size:12px">${porM[mm].length} mail${porM[mm].length>1?'s':''}</span></div>${porM[mm].map(mailRow).join('')}`).join('');
+  return fl+k+(L.length?`<div class="list">${lista}</div>`:'<div class="empty">Sin mails con estos filtros.</div>');
+};
+function mailRow(m){const nuevo=!m.leido&&!m.enviado;return `<div class="li" onclick="verMail('${m.id}')" style="${nuevo?'box-shadow:inset 3px 0 0 var(--ac)':''}"><span class="mu2 num" style="width:46px;font-size:12px">${fd(mFecha(m)).slice(0,5)}</span><div class="t"><b style="${nuevo?'':'font-weight:500'}">${m.enviado?'<span class="mu" style="font-weight:400">Vos → </span>':''}${esc(m.asunto||'(sin asunto)')}</b><span>${esc((m.resumen||'').replace(/\s+/g,' ').slice(0,140))}${m.adjuntos?' · 📎 '+esc(m.adjuntos):''}</span></div>${m.pago_id?`<span class="pill" style="color:var(--ok);border-color:var(--ok)">Pago</span>`:''}${+m.monto?`<span class="amt">${money(m.monto,m.moneda)}</span>`:''}</div>`}
+async function verMail(id){const m=D.mails.find(x=>x.id===id);if(!m)return;const p=m.pago_id&&G.pago(m.pago_id);
+  modal(`<h3 style="white-space:normal">${esc(m.asunto||'(sin asunto)')}</h3><div class="mu" style="font-size:12.5px;margin-bottom:10px">${m.enviado?'Enviado por vos':'De '+esc(mailNombre(m.de))} · ${m.fecha?new Date(m.fecha).toLocaleString('es-AR',{dateStyle:'medium',timeStyle:'short'}):''}${+m.monto?' · importe detectado <b style="color:var(--tx)">'+money(m.monto,m.moneda)+'</b>':''}</div>
+  <div class="pc" style="white-space:pre-wrap;font-size:13.5px;line-height:1.55;max-height:46vh;overflow:auto;background:var(--p2);border:1px solid var(--bd);border-radius:8px;padding:12px">${esc(m.resumen||'(sin texto)')}</div>
+  ${m.adjuntos?`<div class="mu" style="font-size:12.5px;margin-top:8px">📎 Adjuntos: ${esc(m.adjuntos)} <span class="mu2">(se abren en Gmail)</span></div>`:''}
+  ${p?`<div class="li" style="margin-top:10px" onclick="closeModal();openDr('pago','${p.id}')"><div class="t"><b>Registrado como pago: ${esc(p.concepto)}</b><span>${esc(p.estado)} · ${money(p.monto,p.moneda)}</span></div></div>`:''}
+  <div class="f" style="margin-top:10px"><label>Nota</label><input id="mnota" value="${esc(m.nota)}" placeholder="Ej. ya le transferí, falta la boleta…"></div>
+  <div class="mf" style="flex-wrap:wrap"><a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener" style="margin-right:auto">Abrir en Gmail ↗</a>${p?'':`<button class="btn" onclick="pagoDesdeMail('${m.id}')">Registrar como pago</button>`}<button class="btn" onclick="upd('mails','${m.id}',{leido:false});closeModal();render()">Marcar no leído</button><button class="btn pri" onclick="guardarMail('${m.id}')">Listo</button></div>`);
+  if(!m.leido)upd('mails',id,{leido:true}).then(()=>renderNav())}
+async function guardarMail(id){const v=$('#mnota').value.trim();const m=D.mails.find(x=>x.id===id);if(m&&v!==(m.nota||''))await upd('mails',id,{nota:v});closeModal();render()}
+async function mailsLeidos(){for(const m of D.mails.filter(m=>m.carpeta===MQ.carpeta&&!m.leido&&!m.enviado))await upd('mails',m.id,{leido:true});render()}
+let MAIL_PAGO=null;
+function pagoDesdeMail(id){const m=D.mails.find(x=>x.id===id);closeModal();newPago(mFecha(m));MAIL_PAGO=id;setTimeout(()=>{$('#pc').value=m.asunto||'';if(+m.monto)$('#pm').value=String(m.monto).replace('.',',');if($('#pmo'))$('#pmo').value=m.moneda||'ARS';const ca=[...$('#pca').options].find(o=>/expens/i.test(o.value));if(ca&&/expens/i.test(m.asunto+' '+m.resumen))$('#pca').value=ca.value;$('#pn').value='Desde mail de '+mailNombre(m.de)},0)}
+function exportMailsCSV(){const rows=[['Fecha','De','Asunto','Importe','Moneda','Adjuntos','Nota','Pago registrado','Texto']];D.mails.filter(m=>m.carpeta===MQ.carpeta&&(!MQ.mes||mFecha(m).startsWith(MQ.mes))).sort((a,b)=>(a.fecha||'')<(b.fecha||'')?-1:1).forEach(m=>rows.push([fd(mFecha(m)),m.enviado?'Vos':mailNombre(m.de),m.asunto,+m.monto?String(m.monto).replace('.',','):'',m.moneda,m.adjuntos,m.nota,m.pago_id?(G.pago(m.pago_id)||{}).concepto||'Sí':'',(m.resumen||'').replace(/\s+/g,' ')]));download(new Blob([csv(rows)],{type:'text/csv;charset=utf-8'}),'Mails_'+slug(MQ.carpeta)+'.csv')}
+
 /* ---------- Pagos confirmados por mail (bot) ---------- */
 async function genNext(p){if(!(p.recurrencia&&p.vencimiento))return null;const nv=nextDue(p.vencimiento,p.recurrencia);if(!nv)return null;
   const ya=D.pagos.some(x=>(p.cuenta_id?x.cuenta_id===p.cuenta_id:x.concepto===p.concepto)&&x.vencimiento===nv&&x.espacio_id===p.espacio_id);if(ya)return null;
@@ -979,7 +1034,7 @@ function pagoCuenta(v){$('#pcuNew').classList.toggle('hide',v!=='__new');if(v===
   if(!$('#pc').value.trim()||$('#pc').dataset.auto)$('#pc').value=c.nombre,$('#pc').dataset.auto='1';
   if(c.monto_habitual)$('#pm').value=NF.format(+c.monto_habitual);if(c.moneda)$('#pmo').value=c.moneda;if(c.categoria)$('#pca').value=c.categoria;if(c.espacio_id)$('#pe').value=c.espacio_id;
   if(c.recurrencia){setRecWidget('np',c.recurrencia);if(!$('#pv').value){const f=firstDue(c.recurrencia);if(f)$('#pv').value=f}}}
-function newPago(fecha,cuentaId){const e=ESP||(espsSorted().find(x=>norm(x.nombre)==='personal')||espsSorted()[0]||{}).id||'';
+function newPago(fecha,cuentaId){MAIL_PAGO=null;const e=ESP||(espsSorted().find(x=>norm(x.nombre)==='personal')||espsSorted()[0]||{}).id||'';
   modal(`<h3>Nuevo pago / vencimiento</h3>${NO_CUENTAS?'':`<div class="f"><label>Cuenta / destinatario</label><select id="pcu" onchange="pagoCuenta(this.value)"><option value="">— Sin cuenta (pago suelto) —</option>${cuentasOpts(cuentaId)}<option value="__new">+ Nueva cuenta…</option></select></div><div class="f hide" id="pcuNew"><label>Nombre de la nueva cuenta</label><input id="pcuN" placeholder="Ej. Expensas – Depto Palermo"></div>`}<div class="f"><label>Concepto</label><input id="pc" placeholder="Ej. Expensas noviembre" oninput="delete this.dataset.auto"></div>
   <div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Monto</label><input id="pm" inputmode="decimal" placeholder="0,00"></div><div class="f"><label>Moneda</label><select id="pmo">${MONEDAS.map(m=>`<option>${m}</option>`).join('')}</select></div>
   <div class="f"><label>Vencimiento</label><input type="date" id="pv" value="${fecha||''}"></div><div class="f"><label>Categoría</label><select id="pca">${PCATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
@@ -991,7 +1046,7 @@ function newPago(fecha,cuentaId){const e=ESP||(espsSorted().find(x=>norm(x.nombr
 async function createPago(){let cid=$('#pcu')?$('#pcu').value:'';const nn=cid==='__new'?$('#pcuN').value.trim():'';const c=$('#pc').value.trim()||nn||(G.cuenta(cid)||{}).nombre||'';if(!c){$('#pc').focus();return}if(cid==='__new'&&!nn){$('#pcuN').focus();return}$('#pb').disabled=true;const ya=$('#pya').checked;
   if(cid==='__new'){const nc=await ins('cuentas',{nombre:nn,espacio_id:$('#pe').value||null,categoria:$('#pca').value,monto_habitual:parseMonto($('#pm').value)||null,moneda:$('#pmo').value,recurrencia:recVal('np')});cid=nc?nc.id:''}
   const row={cuenta_id:cid||null,concepto:c,monto:parseMonto($('#pm').value),moneda:$('#pmo').value,vencimiento:$('#pv').value||null,categoria:$('#pca').value,recurrencia:recVal('np'),espacio_id:$('#pe').value||null,notas:$('#pn').value.trim(),estado:ya?'Pagado':'A pagar',fecha_pago:ya?($('#pv').value||TODAY()):null};
-  const p=await ins('pagos',row);const fs=$('#pfile').files;if(p&&fs.length)await uploadFiles(fs,{pago_id:p.id,espacio_id:p.espacio_id,categoria:'Comprobante'});closeModal();render();toast('Pago guardado')}
+  const p=await ins('pagos',row);const fs=$('#pfile').files;if(p&&fs.length)await uploadFiles(fs,{pago_id:p.id,espacio_id:p.espacio_id,categoria:'Comprobante'});if(p&&MAIL_PAGO){const m=D.mails.find(x=>x.id===MAIL_PAGO);if(m){await upd('mails',m.id,{pago_id:p.id});if(m.url)await ins('documentos',{pago_id:p.id,espacio_id:p.espacio_id,nombre:'Mail: '+(m.asunto||'mail'),url:m.url,categoria:'Comprobante',nota:m.adjuntos?'Adjuntos en el mail: '+m.adjuntos:''})}}MAIL_PAGO=null;closeModal();render();toast('Pago guardado')}
 function newRec(fecha){modal(`<h3>Nuevo recordatorio</h3><div class="f"><label>Qué</label><input id="rt" placeholder="Ej. Llamar al banco"></div><div class="fg" style="grid-template-columns:1fr 1fr"><div class="f"><label>Fecha</label><input type="date" id="rf2" value="${fecha||TODAY()}"></div><div class="f"><label>Hora (opcional)</label><input type="time" id="rh"></div><div class="f"><label>Espacio</label><select id="re">${espOpts(ESP,true)}</select></div><div class="f"><label>Tema (opcional)</label><select id="rtm"><option value="">—</option>${D.temas.filter(t=>isOpen(t)&&inEsp(t)).map(t=>`<option value="${t.id}">${esc(t.titulo)}</option>`).join('')}</select></div></div><div class="f"><label>Notas</label><input id="rn"></div><div class="mf"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn pri" onclick="createRec()">Guardar</button></div>`)}
 async function createRec(){const t=$('#rt').value.trim();if(!t){$('#rt').focus();return}const tid=$('#rtm').value||null;const tm=tid&&G.tema(tid);await ins('recordatorios',{titulo:t,fecha:$('#rf2').value||TODAY(),hora:$('#rh').value||null,espacio_id:tm?tm.espacio_id:($('#re').value||null),tema_id:tid,notas:$('#rn').value.trim()});closeModal();render();toast('Recordatorio guardado')}
 
