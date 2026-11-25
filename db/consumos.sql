@@ -115,3 +115,8 @@ revoke all on function ingest_eventos(text, jsonb) from public;
 grant execute on function ingest_eventos(text, jsonb) to anon, authenticated;
 
 select 'ok' as resultado;
+
+-- Estado del consumo (rechazos)
+alter table consumos add column if not exists estado text default 'Aprobado';
+alter table consumos add column if not exists fecha_rechazo date;
+notify pgrst, 'reload schema';
